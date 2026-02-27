@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fede puzzona</title>
+    <title>Drago Alato</title>
     <style>
         body {
             margin: 0;
@@ -32,7 +32,6 @@
         window.addEventListener('resize', resize);
         resize();
 
-        // Variabili del mouse e del tempo (per il respiro organico)
         const mouse = { x: width / 2, y: height / 2 };
         let time = 0;
 
@@ -41,7 +40,6 @@
             mouse.y = e.clientY;
         });
 
-        // Configurazione del Drago
         const numPunti = 60;
         const distanzaPunti = 8;
         const drago = [];
@@ -50,23 +48,54 @@
             drago.push({ x: width / 2, y: height / 2 });
         }
 
-        // Colori
-        const coloreCorpo = "#ff4d4d"; // Rosso drago
-        const coloreSpine = "#ffcc00"; // Giallo/Oro
+        const coloreCorpo = "#ff4d4d"; 
+        const coloreSpine = "#ffcc00"; 
+        const coloreAli = "#b30000"; // Un rosso più scuro per dare profondità alle ali
+
+        // Funzione per disegnare un'ala singola
+        function disegnaAla(flap) {
+            ctx.save();
+            // Applichiamo la rotazione del battito (più un piccolo offset per tenerle all'indietro)
+            ctx.rotate(flap - 0.2); 
+            
+            ctx.beginPath();
+            ctx.moveTo(0, 0); // Punto di attacco al corpo
+            
+            // Bordo anteriore dell'ala (robusto)
+            ctx.quadraticCurveTo(30, 30, 15, 100); 
+            
+            // Membrana dell'ala (bordo posteriore frastagliato)
+            ctx.quadraticCurveTo(-15, 80, -30, 60); 
+            ctx.quadraticCurveTo(-15, 40, -20, 15); 
+            ctx.closePath();
+            
+            ctx.fillStyle = coloreAli;
+            ctx.fill();
+            
+            ctx.strokeStyle = coloreSpine;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Aggiungiamo una "vena" per dare dettaglio all'ala
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.quadraticCurveTo(-5, 40, -30, 60);
+            ctx.stroke();
+
+            ctx.restore();
+        }
 
         function animate() {
             ctx.clearRect(0, 0, width, height);
             time += 0.05;
 
-            // 1. Aggiungiamo un leggero movimento continuo al bersaglio (Idle animation)
+            // Movimento idle (il drago respira/fluttua)
             let targetX = mouse.x + Math.cos(time) * 30;
             let targetY = mouse.y + Math.sin(time * 0.8) * 30;
 
-            // 2. Cinematica della testa
             drago[0].x += (targetX - drago[0].x) * 0.15;
             drago[0].y += (targetY - drago[0].y) * 0.15;
 
-            // 3. Cinematica del corpo
             for (let i = 1; i < numPunti; i++) {
                 let dx = drago[i - 1].x - drago[i].x;
                 let dy = drago[i - 1].y - drago[i].y;
@@ -78,17 +107,12 @@
                 }
             }
 
-            // --- FASE DI DISEGNO ---
-
-            // A. Disegniamo le Spine Dorsali (sotto al corpo)
+            // --- A. SPINE DORSALI ---
             ctx.fillStyle = coloreSpine;
             for (let i = 2; i < numPunti - 5; i += 3) {
-                // Calcoliamo l'angolo del segmento corrente
                 let dx = drago[i-1].x - drago[i+1].x;
                 let dy = drago[i-1].y - drago[i+1].y;
                 let angolo = Math.atan2(dy, dx);
-                
-                // L'angolo perpendicolare (90 gradi = Pi/2) per far uscire la spina ai lati
                 let perpendicolare = angolo + Math.PI / 2;
                 
                 let spessoreCorpo = 18 - (i * 0.25);
@@ -102,42 +126,48 @@
                 ctx.beginPath();
                 ctx.moveTo(spinaBaseX, spinaBaseY);
                 ctx.lineTo(spinaPuntaX, spinaPuntaY);
-                // Triangolo per la spina
                 ctx.lineTo(drago[i].x + Math.cos(perpendicolare + 0.5) * spessoreCorpo, drago[i].y + Math.sin(perpendicolare + 0.5) * spessoreCorpo);
                 ctx.fill();
             }
 
-            // B. Disegniamo il Corpo Centrale (una linea continua)
-            ctx.beginPath();
-            ctx.lineCap = "round";
-            ctx.lineJoin = "round";
-            ctx.moveTo(drago[0].x, drago[0].y);
-            for (let i = 1; i < numPunti; i++) {
-                ctx.lineTo(drago[i].x, drago[i].y);
-            }
+            // --- B. ALI ---
+            let indiceAli = 7; // Attacchiamo le ali al settimo "punto" del corpo
+            let dxAli = drago[indiceAli - 1].x - drago[indiceAli + 1].x;
+            let dyAli = drago[indiceAli - 1].y - drago[indiceAli + 1].y;
+            let angoloAli = Math.atan2(dyAli, dxAli);
             
-            // Applichiamo un gradiente che segue il corpo non è banale in 2D lungo una curva, 
-            // quindi usiamo un'ombra per dare un finto effetto 3D (volume)
+            ctx.save();
+            ctx.translate(drago[indiceAli].x, drago[indiceAli].y);
+            ctx.rotate(angoloAli);
+
+            // Calcoliamo il battito con la funzione Seno (velocità 6, ampiezza 0.5)
+            let flap = Math.sin(time * 6) * 0.5;
+
+            // Disegniamo l'ala destra
+            disegnaAla(flap);
+
+            // Capovolgiamo l'asse Y e disegniamo l'ala sinistra in modo simmetrico!
+            ctx.scale(1, -1);
+            disegnaAla(flap);
+
+            ctx.restore();
+
+            // --- C. CORPO ---
             ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
             ctx.shadowBlur = 10;
             ctx.shadowOffsetX = 5;
             ctx.shadowOffsetY = 5;
 
-            // Spessore variabile usando draw pass successivi per assottigliare la coda
-            // Per ottimizzare, lo facciamo con uno spessore fisso sfumato, oppure ridisegnando a segmenti.
-            // Il metodo più veloce per un corpo fluido è sovrapporre cerchi ad altissima frequenza.
             for (let i = numPunti - 1; i >= 0; i--) {
                 ctx.beginPath();
-                let raggio = Math.max(1, 18 - (i * 0.25)); // Il corpo si stringe verso la coda
+                let raggio = Math.max(1, 18 - (i * 0.25));
                 ctx.arc(drago[i].x, drago[i].y, raggio, 0, Math.PI * 2);
-                ctx.fillStyle = (i % 5 === 0) ? "#cc0000" : coloreCorpo; // Effetto scaglie ad anelli
+                ctx.fillStyle = (i % 5 === 0) ? "#cc0000" : coloreCorpo; 
                 ctx.fill();
             }
-
-            // Reset ombra per non sporcare la testa
             ctx.shadowColor = 'transparent';
 
-            // C. Disegniamo la Testa
+            // --- D. TESTA ---
             let angoloTesta = Math.atan2(drago[0].y - drago[2].y, drago[0].x - drago[2].x);
             
             ctx.save();
@@ -152,10 +182,10 @@
 
             // Occhi
             ctx.fillStyle = "#ffffff";
-            ctx.beginPath(); ctx.arc(10, -8, 4, 0, Math.PI * 2); ctx.fill(); // Occhio Sinistro
-            ctx.beginPath(); ctx.arc(10, 8, 4, 0, Math.PI * 2); ctx.fill();  // Occhio Destro
+            ctx.beginPath(); ctx.arc(10, -8, 4, 0, Math.PI * 2); ctx.fill(); 
+            ctx.beginPath(); ctx.arc(10, 8, 4, 0, Math.PI * 2); ctx.fill();  
             ctx.fillStyle = "#000000";
-            ctx.beginPath(); ctx.arc(12, -8, 2, 0, Math.PI * 2); ctx.fill(); // Pupilla
+            ctx.beginPath(); ctx.arc(12, -8, 2, 0, Math.PI * 2); ctx.fill(); 
             ctx.beginPath(); ctx.arc(12, 8, 2, 0, Math.PI * 2); ctx.fill();
 
             // Corna
