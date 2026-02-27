@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Drago Realistico 2D</title>
+    <title>Drago Realistico 2D e Spuita-Cuori</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
-            background: radial-gradient(circle at center, #1e2430 0%, #080b12 100%);
+            background: radial-gradient(circle at center, #2b3240 0%, #0d1117 100%);
             cursor: crosshair;
         }
         canvas {
@@ -51,6 +51,10 @@
         const coloreCorpo = "#d93838"; 
         const coloreSpine = "#ffcc00"; 
         const coloreAli = "#8c1c1c"; 
+        const coloreCuore = "#ff2e2e"; // Rosso fuoco per il cuore sputato
+
+        // Sistema di particelle per i cuori
+        let cuoriActivi = [];
 
         // Nuova funzione per scolpire il corpo: calcola lo spessore in base alla posizione
         function getRaggio(i) {
@@ -75,9 +79,15 @@
             ctx.lineWidth = 2;
             ctx.stroke();
 
+            // Più venature per ali più dettagliate
             ctx.beginPath();
             ctx.moveTo(0, 0);
             ctx.quadraticCurveTo(-5, 50, -40, 75);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.quadraticCurveTo(-15, 60, -20, 110);
             ctx.stroke();
             ctx.restore();
         }
@@ -88,26 +98,20 @@
             let dy = drago[indice-1].y - drago[indice+1].y;
             let angoloDirezione = Math.atan2(dy, dx);
             
-            // Calcoliamo l'angolo verso l'esterno
             let angoloEsterno = angoloDirezione + (Math.PI / 2) * lato;
-            // Calcoliamo l'angolo per piegare il gomito/ginocchio all'indietro
             let angoloPiega = angoloDirezione + (Math.PI * 0.75) * lato; 
 
             let raggioCorpo = getRaggio(indice);
             
-            // Attaccatura (spalla/anca)
             let spallaX = drago[indice].x + Math.cos(angoloEsterno) * (raggioCorpo - 4);
             let spallaY = drago[indice].y + Math.sin(angoloEsterno) * (raggioCorpo - 4);
 
-            // Gomito/Ginocchio
             let articolazioneX = spallaX + Math.cos(angoloEsterno) * 18;
             let articolazioneY = spallaY + Math.sin(angoloEsterno) * 18;
 
-            // Zampa/Piede
             let piedeX = articolazioneX + Math.cos(angoloPiega) * 22;
             let piedeY = articolazioneY + Math.sin(angoloPiega) * 22;
 
-            // Disegna l'arto
             ctx.beginPath();
             ctx.moveTo(spallaX, spallaY);
             ctx.lineTo(articolazioneX, articolazioneY);
@@ -118,15 +122,51 @@
             ctx.lineJoin = "round";
             ctx.stroke();
 
-            // Aggiungiamo 3 artigli per zampa
+            // Artigli più definiti
             ctx.fillStyle = "#ffffff";
-            for(let a = -1; a <= 1; a++) {
-                ctx.beginPath();
-                let dirArtiglio = angoloPiega + (a * 0.3);
-                ctx.arc(piedeX + Math.cos(dirArtiglio)*6, piedeY + Math.sin(dirArtiglio)*6, 2.5, 0, Math.PI*2);
-                ctx.fill();
-            }
+            ctx.beginPath();
+            let dirArtiglioP = angoloPiega + (0.5 * lato);
+            ctx.moveTo(piedeX + Math.cos(dirArtiglioP)*2, piedeY + Math.sin(dirArtiglioP)*2);
+            ctx.lineTo(piedeX + Math.cos(dirArtiglioP)*8, piedeY + Math.sin(dirArtiglioP)*8);
+            ctx.lineTo(piedeX + Math.cos(dirArtiglioP + 0.3)*3, piedeY + Math.sin(dirArtiglioP + 0.3)*3);
+            ctx.fill();
+            
+            ctx.beginPath();
+            let dirArtiglioC = angoloPiega;
+            ctx.moveTo(piedeX + Math.cos(dirArtiglioC)*2, piedeY + Math.sin(dirArtiglioC)*2);
+            ctx.lineTo(piedeX + Math.cos(dirArtiglioC)*9, piedeY + Math.sin(dirArtiglioC)*9);
+            ctx.lineTo(piedeX + Math.cos(dirArtiglioC + 0.25)*4, piedeY + Math.sin(dirArtiglioC + 0.25)*4);
+            ctx.fill();
         }
+
+        // Funzione per disegnare un cuore a percorso
+        function disegnaPercorsoCuore(x, y, dimensione) {
+            ctx.beginPath();
+            ctx.moveTo(x, y + dimensione / 4);
+            ctx.bezierCurveTo(x, y, x - dimensione / 2, y, x - dimensione / 2, y + dimensione / 4);
+            ctx.bezierCurveTo(x - dimensione / 2, y + dimensione / 2, x - dimensione / 4, y + dimensione * 0.75, x, y + dimensione);
+            ctx.bezierCurveTo(x + dimensione / 4, y + dimensione * 0.75, x + dimensione / 2, y + dimensione / 2, x + dimensione / 2, y + dimensione / 4);
+            ctx.bezierCurveTo(x + dimensione / 2, y, x, y, x, y + dimensione / 4);
+            ctx.closePath();
+        }
+
+        // Evento mouse per sputare cuori
+        window.addEventListener('mousedown', (e) => {
+            if (e.button === 0) { // Clic sinistro
+                // Spawnare diversi cuori dalla bocca
+                for (let i = 0; i < 3; i++) {
+                    cuoriActivi.push({
+                        x: drago[0].x,
+                        y: drago[0].y,
+                        vx: Math.cos(i * 0.3 + 0.1) * 12 + (Math.random() - 0.5) * 4,
+                        vy: Math.sin(i * 0.3 + 0.1) * 12 + (Math.random() - 0.5) * 4,
+                        dimensione: 80 + Math.random() * 40,
+                        alpha: 1,
+                        lifespan: 150 + Math.random() * 50
+                    });
+                }
+            }
+        });
 
         function animate() {
             ctx.clearRect(0, 0, width, height);
@@ -172,14 +212,13 @@
                 ctx.fill();
             }
 
-            // Zampe anteriori (vicino al torace) e posteriori (vicino alla base della coda)
             disegnaZampa(8, 1);  // Anteriore Destra
             disegnaZampa(8, -1); // Anteriore Sinistra
             disegnaZampa(28, 1); // Posteriore Destra
             disegnaZampa(28, -1);// Posteriore Sinistra
 
-            // --- 2. ALI (Sotto il corpo per dare effetto "volo sopra l'osservatore") ---
-            let indiceAli = 10; // Spostate più indietro sul torace rigonfio
+            // --- 2. ALI (Sotto il corpo) ---
+            let indiceAli = 10; 
             let dxAli = drago[indiceAli - 1].x - drago[indiceAli + 1].x;
             let dyAli = drago[indiceAli - 1].y - drago[indiceAli + 1].y;
             let angoloAli = Math.atan2(dyAli, dxAli);
@@ -193,23 +232,37 @@
             disegnaAla(flap);
             ctx.restore();
 
-            // --- 3. CORPO (Scultura dinamica) ---
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
-            ctx.shadowBlur = 12;
-            ctx.shadowOffsetX = 4;
-            ctx.shadowOffsetY = 4;
-
+            // --- 3. CORPO (Scultura dinamica e squamosa) ---
             for (let i = numPunti - 1; i >= 0; i--) {
-                ctx.beginPath();
-                // Usa la nuova funzione per il raggio
-                let raggio = getRaggio(i);
-                ctx.arc(drago[i].x, drago[i].y, raggio, 0, Math.PI * 2);
+                ctx.save();
+                ctx.translate(drago[i].x, drago[i].y);
+                if (i > 0) {
+                    let dxB = drago[i-1].x - drago[i].x;
+                    let dyB = drago[i-1].y - drago[i].y;
+                    ctx.rotate(Math.atan2(dyB, dxB));
+                }
                 
-                // Colorazione a strisce per simulare le scaglie grosse
-                ctx.fillStyle = (i % 4 === 0) ? "#a62121" : coloreCorpo; 
+                let raggio = getRaggio(i);
+
+                // Base colorata con gradiente per dare volume
+                let gradienteCorpo = ctx.createRadialGradient(0, -raggio/2, 0, 0, -raggio/2, raggio * 1.5);
+                gradienteCorpo.addColorStop(0, "#f25c5c"); // Luce sulla schiena
+                gradienteCorpo.addColorStop(1, coloreCorpo);   // Colore base
+                
+                ctx.beginPath();
+                ctx.ellipse(0, 0, raggio, raggio * 0.8, 0, 0, Math.PI * 2); // Un po' schiacciato
+                ctx.fillStyle = gradienteCorpo;
                 ctx.fill();
+                
+                // Overlay di squame scure
+                if (i % 2 === 0) {
+                   ctx.beginPath();
+                   ctx.ellipse(-raggio*0.2, 0, raggio*1.2, raggio*0.6, Math.PI / 8, Math.PI/2, Math.PI * 1.5);
+                   ctx.fillStyle = 'rgba(0,0,0,0.15)'; // Squame scure
+                   ctx.fill();
+                }
+                ctx.restore();
             }
-            ctx.shadowColor = 'transparent';
 
             // --- 4. TESTA ---
             let angoloTesta = Math.atan2(drago[0].y - drago[2].y, drago[0].x - drago[2].x);
@@ -218,39 +271,78 @@
             ctx.translate(drago[0].x, drago[0].y);
             ctx.rotate(angoloTesta);
 
-            // Muso e cranio
+            // Muso e cranio più scolpito
             ctx.fillStyle = coloreCorpo;
             ctx.beginPath();
-            ctx.ellipse(6, 0, 22, 16, 0, 0, Math.PI * 2);
+            ctx.ellipse(6, 0, 24, 18, 0, 0, Math.PI * 2);
             ctx.fill();
-
+            
             // Dettaglio Narici
             ctx.fillStyle = "#660000";
-            ctx.beginPath(); ctx.arc(22, -4, 2, 0, Math.PI * 2); ctx.fill();
-            ctx.beginPath(); ctx.arc(22, 4, 2, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(24, -4, 2.5, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(24, 4, 2.5, 0, Math.PI * 2); ctx.fill();
 
-            // Occhi incattiviti (non più tondi, ma ellittici)
+            // Occhi incattiviti predatori con glint
             ctx.fillStyle = "#ffcc00";
-            ctx.beginPath(); ctx.ellipse(10, -9, 5, 2, Math.PI/6, 0, Math.PI * 2); ctx.fill(); 
-            ctx.beginPath(); ctx.ellipse(10, 9, 5, 2, -Math.PI/6, 0, Math.PI * 2); ctx.fill();  
+            ctx.beginPath(); ctx.ellipse(10, -9, 5, 2.5, Math.PI/4, 0, Math.PI * 2); ctx.fill(); 
+            ctx.beginPath(); ctx.ellipse(10, 9, 5, 2.5, -Math.PI/4, 0, Math.PI * 2); ctx.fill();  
+            
             ctx.fillStyle = "#000000";
-            ctx.beginPath(); ctx.arc(11, -9, 1.5, 0, Math.PI * 2); ctx.fill(); 
-            ctx.beginPath(); ctx.arc(11, 9, 1.5, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(11, -9, 1.8, 0, Math.PI * 2); ctx.fill(); 
+            ctx.beginPath(); ctx.arc(11, 9, 1.8, 0, Math.PI * 2); ctx.fill();
+            
+            ctx.fillStyle = "#ffffff"; // Glint oculari
+            ctx.beginPath(); ctx.arc(12, -10, 1, 0, Math.PI * 2); ctx.fill(); 
+            ctx.beginPath(); ctx.arc(12, 8, 1, 0, Math.PI * 2); ctx.fill();
 
-            // Corna più grandi
+            // Corna più grandi e gnarled
             ctx.strokeStyle = "#e6b800";
-            ctx.lineWidth = 5;
+            ctx.lineWidth = 6;
             ctx.lineCap = "round";
             ctx.beginPath();
-            ctx.moveTo(-2, -12);
-            ctx.quadraticCurveTo(-20, -30, -5, -45);
+            ctx.moveTo(-2, -14);
+            ctx.quadraticCurveTo(-25, -35, -5, -50);
             ctx.stroke();
             
             ctx.beginPath();
-            ctx.moveTo(-2, 12);
-            ctx.quadraticCurveTo(-20, 30, -5, 45);
+            ctx.moveTo(-2, 14);
+            ctx.quadraticCurveTo(-25, 35, -5, 50);
             ctx.stroke();
 
+            ctx.restore();
+
+            // --- 5. AGGIORNAMENTO E DISEGNO DEI CUORI ---
+            ctx.save();
+            ctx.shadowColor = 'rgba(255, 46, 46, 0.8)'; // Bagliore per i cuori
+            ctx.shadowBlur = 15;
+            for (let i = cuoriActivi.length - 1; i >= 0; i--) {
+                let cuore = cuoriActivi[i];
+                cuore.x += cuore.vx;
+                cuore.y += cuore.vy;
+                cuore.dimensione *= 1.01; // Si ingrandisce
+                cuore.alpha *= 0.98; // Si dissolve
+                cuore.vx *= 0.99; // Rallenta
+                cuore.vy *= 0.99; 
+                cuore.lifespan--;
+
+                if (cuore.alpha <= 0 || cuore.lifespan <= 0) {
+                    cuoriActivi.splice(i, 1);
+                    continue;
+                }
+
+                // Disegno del cuore particellare
+                ctx.globalAlpha = cuore.alpha;
+                ctx.fillStyle = coloreCuore;
+                disegnaPercorsoCuore(cuore.x, cuore.y - cuore.dimensione/2, cuore.dimensione);
+                ctx.fill();
+
+                // Disegno del testo "Fede puzzona"
+                ctx.fillStyle = '#ffffff';
+                ctx.font = `bold ${cuore.dimensione/4}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('Fede puzzona', cuore.x, cuore.y + cuore.dimensione/4);
+            }
             ctx.restore();
 
             requestAnimationFrame(animate);
