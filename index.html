@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Drago Alato</title>
+    <title>Drago Realistico 2D</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
-            background: radial-gradient(circle at center, #2b3240 0%, #0d1117 100%);
+            background: radial-gradient(circle at center, #1e2430 0%, #080b12 100%);
             cursor: crosshair;
         }
         canvas {
@@ -48,48 +48,90 @@
             drago.push({ x: width / 2, y: height / 2 });
         }
 
-        const coloreCorpo = "#ff4d4d"; 
+        const coloreCorpo = "#d93838"; 
         const coloreSpine = "#ffcc00"; 
-        const coloreAli = "#b30000"; // Un rosso più scuro per dare profondità alle ali
+        const coloreAli = "#8c1c1c"; 
 
-        // Funzione per disegnare un'ala singola
+        // Nuova funzione per scolpire il corpo: calcola lo spessore in base alla posizione
+        function getRaggio(i) {
+            if (i < 6) return 8 + (i * 0.8); // Collo (si allarga verso il torace)
+            if (i >= 6 && i < 18) return 14 + Math.sin((i - 6) / 12 * Math.PI) * 6; // Torace muscoloso (picco di spessore)
+            return Math.max(2, 16 - ((i - 18) * 0.4)); // Pancia e coda che si assottigliano
+        }
+
         function disegnaAla(flap) {
             ctx.save();
-            // Applichiamo la rotazione del battito (più un piccolo offset per tenerle all'indietro)
             ctx.rotate(flap - 0.2); 
-            
             ctx.beginPath();
-            ctx.moveTo(0, 0); // Punto di attacco al corpo
-            
-            // Bordo anteriore dell'ala (robusto)
-            ctx.quadraticCurveTo(30, 30, 15, 100); 
-            
-            // Membrana dell'ala (bordo posteriore frastagliato)
-            ctx.quadraticCurveTo(-15, 80, -30, 60); 
-            ctx.quadraticCurveTo(-15, 40, -20, 15); 
+            ctx.moveTo(0, 0); 
+            ctx.quadraticCurveTo(40, 40, 20, 130); 
+            ctx.quadraticCurveTo(-20, 100, -40, 75); 
+            ctx.quadraticCurveTo(-20, 50, -25, 15); 
             ctx.closePath();
             
             ctx.fillStyle = coloreAli;
             ctx.fill();
-            
             ctx.strokeStyle = coloreSpine;
             ctx.lineWidth = 2;
             ctx.stroke();
 
-            // Aggiungiamo una "vena" per dare dettaglio all'ala
             ctx.beginPath();
             ctx.moveTo(0, 0);
-            ctx.quadraticCurveTo(-5, 40, -30, 60);
+            ctx.quadraticCurveTo(-5, 50, -40, 75);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Nuova funzione per disegnare le zampe
+        function disegnaZampa(indice, lato) { // lato: 1 per destra, -1 per sinistra
+            let dx = drago[indice-1].x - drago[indice+1].x;
+            let dy = drago[indice-1].y - drago[indice+1].y;
+            let angoloDirezione = Math.atan2(dy, dx);
+            
+            // Calcoliamo l'angolo verso l'esterno
+            let angoloEsterno = angoloDirezione + (Math.PI / 2) * lato;
+            // Calcoliamo l'angolo per piegare il gomito/ginocchio all'indietro
+            let angoloPiega = angoloDirezione + (Math.PI * 0.75) * lato; 
+
+            let raggioCorpo = getRaggio(indice);
+            
+            // Attaccatura (spalla/anca)
+            let spallaX = drago[indice].x + Math.cos(angoloEsterno) * (raggioCorpo - 4);
+            let spallaY = drago[indice].y + Math.sin(angoloEsterno) * (raggioCorpo - 4);
+
+            // Gomito/Ginocchio
+            let articolazioneX = spallaX + Math.cos(angoloEsterno) * 18;
+            let articolazioneY = spallaY + Math.sin(angoloEsterno) * 18;
+
+            // Zampa/Piede
+            let piedeX = articolazioneX + Math.cos(angoloPiega) * 22;
+            let piedeY = articolazioneY + Math.sin(angoloPiega) * 22;
+
+            // Disegna l'arto
+            ctx.beginPath();
+            ctx.moveTo(spallaX, spallaY);
+            ctx.lineTo(articolazioneX, articolazioneY);
+            ctx.lineTo(piedeX, piedeY);
+            ctx.strokeStyle = coloreCorpo;
+            ctx.lineWidth = 9;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
             ctx.stroke();
 
-            ctx.restore();
+            // Aggiungiamo 3 artigli per zampa
+            ctx.fillStyle = "#ffffff";
+            for(let a = -1; a <= 1; a++) {
+                ctx.beginPath();
+                let dirArtiglio = angoloPiega + (a * 0.3);
+                ctx.arc(piedeX + Math.cos(dirArtiglio)*6, piedeY + Math.sin(dirArtiglio)*6, 2.5, 0, Math.PI*2);
+                ctx.fill();
+            }
         }
 
         function animate() {
             ctx.clearRect(0, 0, width, height);
             time += 0.05;
 
-            // Movimento idle (il drago respira/fluttua)
             let targetX = mouse.x + Math.cos(time) * 30;
             let targetY = mouse.y + Math.sin(time * 0.8) * 30;
 
@@ -107,7 +149,7 @@
                 }
             }
 
-            // --- A. SPINE DORSALI ---
+            // --- 1. SPINE DORSALI E ZAMPE (Sotto il corpo) ---
             ctx.fillStyle = coloreSpine;
             for (let i = 2; i < numPunti - 5; i += 3) {
                 let dx = drago[i-1].x - drago[i+1].x;
@@ -115,7 +157,7 @@
                 let angolo = Math.atan2(dy, dx);
                 let perpendicolare = angolo + Math.PI / 2;
                 
-                let spessoreCorpo = 18 - (i * 0.25);
+                let spessoreCorpo = getRaggio(i);
                 let lunghezzaSpina = 15 - (i * 0.2);
 
                 let spinaBaseX = drago[i].x + Math.cos(perpendicolare) * spessoreCorpo;
@@ -130,8 +172,14 @@
                 ctx.fill();
             }
 
-            // --- B. ALI ---
-            let indiceAli = 7; // Attacchiamo le ali al settimo "punto" del corpo
+            // Zampe anteriori (vicino al torace) e posteriori (vicino alla base della coda)
+            disegnaZampa(8, 1);  // Anteriore Destra
+            disegnaZampa(8, -1); // Anteriore Sinistra
+            disegnaZampa(28, 1); // Posteriore Destra
+            disegnaZampa(28, -1);// Posteriore Sinistra
+
+            // --- 2. ALI (Sotto il corpo per dare effetto "volo sopra l'osservatore") ---
+            let indiceAli = 10; // Spostate più indietro sul torace rigonfio
             let dxAli = drago[indiceAli - 1].x - drago[indiceAli + 1].x;
             let dyAli = drago[indiceAli - 1].y - drago[indiceAli + 1].y;
             let angoloAli = Math.atan2(dyAli, dxAli);
@@ -139,66 +187,68 @@
             ctx.save();
             ctx.translate(drago[indiceAli].x, drago[indiceAli].y);
             ctx.rotate(angoloAli);
-
-            // Calcoliamo il battito con la funzione Seno (velocità 6, ampiezza 0.5)
-            let flap = Math.sin(time * 6) * 0.5;
-
-            // Disegniamo l'ala destra
+            let flap = Math.sin(time * 6) * 0.6;
             disegnaAla(flap);
-
-            // Capovolgiamo l'asse Y e disegniamo l'ala sinistra in modo simmetrico!
             ctx.scale(1, -1);
             disegnaAla(flap);
-
             ctx.restore();
 
-            // --- C. CORPO ---
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-            ctx.shadowBlur = 10;
-            ctx.shadowOffsetX = 5;
-            ctx.shadowOffsetY = 5;
+            // --- 3. CORPO (Scultura dinamica) ---
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+            ctx.shadowBlur = 12;
+            ctx.shadowOffsetX = 4;
+            ctx.shadowOffsetY = 4;
 
             for (let i = numPunti - 1; i >= 0; i--) {
                 ctx.beginPath();
-                let raggio = Math.max(1, 18 - (i * 0.25));
+                // Usa la nuova funzione per il raggio
+                let raggio = getRaggio(i);
                 ctx.arc(drago[i].x, drago[i].y, raggio, 0, Math.PI * 2);
-                ctx.fillStyle = (i % 5 === 0) ? "#cc0000" : coloreCorpo; 
+                
+                // Colorazione a strisce per simulare le scaglie grosse
+                ctx.fillStyle = (i % 4 === 0) ? "#a62121" : coloreCorpo; 
                 ctx.fill();
             }
             ctx.shadowColor = 'transparent';
 
-            // --- D. TESTA ---
+            // --- 4. TESTA ---
             let angoloTesta = Math.atan2(drago[0].y - drago[2].y, drago[0].x - drago[2].x);
             
             ctx.save();
             ctx.translate(drago[0].x, drago[0].y);
             ctx.rotate(angoloTesta);
 
-            // Muso
+            // Muso e cranio
             ctx.fillStyle = coloreCorpo;
             ctx.beginPath();
-            ctx.ellipse(5, 0, 20, 14, 0, 0, Math.PI * 2);
+            ctx.ellipse(6, 0, 22, 16, 0, 0, Math.PI * 2);
             ctx.fill();
 
-            // Occhi
-            ctx.fillStyle = "#ffffff";
-            ctx.beginPath(); ctx.arc(10, -8, 4, 0, Math.PI * 2); ctx.fill(); 
-            ctx.beginPath(); ctx.arc(10, 8, 4, 0, Math.PI * 2); ctx.fill();  
-            ctx.fillStyle = "#000000";
-            ctx.beginPath(); ctx.arc(12, -8, 2, 0, Math.PI * 2); ctx.fill(); 
-            ctx.beginPath(); ctx.arc(12, 8, 2, 0, Math.PI * 2); ctx.fill();
+            // Dettaglio Narici
+            ctx.fillStyle = "#660000";
+            ctx.beginPath(); ctx.arc(22, -4, 2, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(22, 4, 2, 0, Math.PI * 2); ctx.fill();
 
-            // Corna
-            ctx.strokeStyle = coloreSpine;
-            ctx.lineWidth = 4;
+            // Occhi incattiviti (non più tondi, ma ellittici)
+            ctx.fillStyle = "#ffcc00";
+            ctx.beginPath(); ctx.ellipse(10, -9, 5, 2, Math.PI/6, 0, Math.PI * 2); ctx.fill(); 
+            ctx.beginPath(); ctx.ellipse(10, 9, 5, 2, -Math.PI/6, 0, Math.PI * 2); ctx.fill();  
+            ctx.fillStyle = "#000000";
+            ctx.beginPath(); ctx.arc(11, -9, 1.5, 0, Math.PI * 2); ctx.fill(); 
+            ctx.beginPath(); ctx.arc(11, 9, 1.5, 0, Math.PI * 2); ctx.fill();
+
+            // Corna più grandi
+            ctx.strokeStyle = "#e6b800";
+            ctx.lineWidth = 5;
+            ctx.lineCap = "round";
             ctx.beginPath();
-            ctx.moveTo(-5, -10);
-            ctx.quadraticCurveTo(-15, -25, -5, -35);
+            ctx.moveTo(-2, -12);
+            ctx.quadraticCurveTo(-20, -30, -5, -45);
             ctx.stroke();
             
             ctx.beginPath();
-            ctx.moveTo(-5, 10);
-            ctx.quadraticCurveTo(-15, 25, -5, 35);
+            ctx.moveTo(-2, 12);
+            ctx.quadraticCurveTo(-20, 30, -5, 45);
             ctx.stroke();
 
             ctx.restore();
