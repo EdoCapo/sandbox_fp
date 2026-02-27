@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drago di Punti</title>
+    <style>
+        /* Rimuoviamo i margini e rendiamo lo sfondo scuro per far risaltare il drago */
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #1a1a2e;
+            cursor: crosshair; /* Cambiamo il cursore per renderlo più "giocoso" */
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="dragonCanvas"></canvas>
+
+    <script>
+        // 1. Configurazione del Canvas
+        const canvas = document.getElementById('dragonCanvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // 2. Tracciamento del Mouse
+        const mouse = { x: canvas.width / 2, y: canvas.height / 2 };
+
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+
+        // Ridimensionamento dinamico se la finestra cambia grandezza
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        // 3. Impostazioni del Drago
+        const numPunti = 45;       // Lunghezza del drago (numero di punti)
+        const distanzaPunti = 12;  // Distanza rigida tra un punto e l'altro
+        const drago = [];
+
+        // Inizializziamo tutti i punti al centro dello schermo
+        for (let i = 0; i < numPunti; i++) {
+            drago.push({ x: canvas.width / 2, y: canvas.height / 2 });
+        }
+
+        // 4. Ciclo di Animazione
+        function animate() {
+            // Pulisce il frame precedente ad ogni ciclo
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // A. Movimento della Testa (Indice 0)
+            // La testa segue il mouse in modo fluido (velocità 0.1)
+            let dxTesta = mouse.x - drago[0].x;
+            let dyTesta = mouse.y - drago[0].y;
+            drago[0].x += dxTesta * 0.1;
+            drago[0].y += dyTesta * 0.1;
+
+            // B. Movimento del Corpo
+            // Ogni punto segue quello esattamente davanti a sé
+            for (let i = 1; i < numPunti; i++) {
+                let dx = drago[i-1].x - drago[i].x;
+                let dy = drago[i-1].y - drago[i].y;
+                let distanza = Math.sqrt(dx * dx + dy * dy);
+
+                // Se la distanza supera quella impostata, tiriamo il punto verso il precedente
+                if (distanza > distanzaPunti) {
+                    drago[i].x = drago[i-1].x - (dx / distanza) * distanzaPunti;
+                    drago[i].y = drago[i-1].y - (dy / distanza) * distanzaPunti;
+                }
+            }
+
+            // C. Disegno dei Punti
+            for (let i = 0; i < numPunti; i++) {
+                ctx.beginPath();
+                
+                // La dimensione si restringe andando verso la coda per dare la forma del drago
+                let raggio = Math.max(2, 20 - (i * 0.4));
+                ctx.arc(drago[i].x, drago[i].y, raggio, 0, Math.PI * 2);
+
+                // Colore "focoso" che sfuma lungo il corpo
+                // Tonalità (Hue) fissa su arancio/rosso, cambia la luminosità (Lightness)
+                let luminosita = 40 + (i / numPunti) * 40;
+                ctx.fillStyle = `hsl(15, 100%, ${luminosita}%)`; 
+                
+                // Aggiungiamo un bordino per dare volume
+                ctx.strokeStyle = "rgba(0,0,0,0.5)";
+                ctx.lineWidth = 1;
+                
+                ctx.fill();
+                ctx.stroke();
+                ctx.closePath();
+            }
+
+            // Richiama la funzione per il prossimo frame
+            requestAnimationFrame(animate);
+        }
+
+        // Avvia l'animazione
+        animate();
+    </script>
+</body>
+</html>
