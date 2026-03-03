@@ -8,7 +8,6 @@
         body {
             margin: 0;
             overflow: hidden;
-            /* Sfondo cielo notturno profondo */
             background: linear-gradient(to bottom, #0f131f 0%, #1a1e2e 100%);
             cursor: crosshair;
         }
@@ -36,7 +35,6 @@
         const mouse = { x: width / 2, y: height / 2 };
         let time = 0;
         
-        // Variabili dinamiche per le nuove animazioni
         let blinkTimer = 0;
         let mouthOpen = 0; 
 
@@ -45,7 +43,6 @@
             mouse.y = e.clientY;
         });
 
-        // Configurazione Drago
         const numPunti = 60;
         const distanzaPunti = 8;
         const drago = [];
@@ -58,12 +55,20 @@
         const coloreAli = "#8c1c1c"; 
         const coloreCuore = "#ff2e2e";
 
+        // AGGIUNTA: Disabilita il menu contestuale sul tasto destro
+        window.addEventListener('contextmenu', (e) => e.preventDefault());
+
         // Array per i sistemi particellari
-        let cuoriActivi = [];
+        let cuoriActivi = []; // Cuori di Fede puzzona
+        let cuoriCucciolo = []; // AGGIUNTA: Cuori colorati del cucciolo
         let scintilleCoda = [];
         let nuvole = [];
 
-        // Generazione iniziale delle nuvole
+        // AGGIUNTA: Configurazione Cucciolo di Draghetto
+        const coloreCucciolo = "#78e08f"; // Un verde cute
+        const cucciolo = { x: width / 2, y: height / 2, angolo: 0 };
+        const coloriCuoriCucciolo = ['#ff9ff3', '#ffeaa7', '#81ecec', '#fab1a0']; // Rosa, Giallo, Azzurro, Arancione pastello
+
         for(let i = 0; i < 25; i++) {
             nuvole.push({
                 x: Math.random() * window.innerWidth,
@@ -161,10 +166,8 @@
         }
 
         window.addEventListener('mousedown', (e) => {
-            if (e.button === 0) {
-                mouthOpen = 1.0; // Spalanca la bocca al massimo!
-
-                // Angolo attuale della testa per sparare in avanti
+            if (e.button === 0) { // Clic Sinistro: Cuori Fede puzzona
+                mouthOpen = 1.0; 
                 let dxT = drago[0].x - drago[2].x;
                 let dyT = drago[0].y - drago[2].y;
                 let angoloSparo = Math.atan2(dyT, dxT);
@@ -181,34 +184,105 @@
                         lifespan: 120 + Math.random() * 40
                     });
                 }
+            } else if (e.button === 2) { // AGGIUNTA: Clic Destro: Cuori Colorati del Cucciolo
+                let aC = cucciolo.angolo + Math.PI/2; // Orientamento sparo dal cucciolo
+
+                for(let i = 0; i < 6; i++) {
+                    let spread = (Math.random() - 0.5) * 0.6;
+                    cuoriCucciolo.push({
+                        x: cucciolo.x, y: cucciolo.y,
+                        vx: Math.cos(aC + spread) * (8 + Math.random()*4),
+                        vy: Math.sin(aC + spread) * (8 + Math.random()*4) - 2, // Spinge verso l'alto
+                        dimensione: 30 + Math.random() * 20, // Più piccoli e cute
+                        alpha: 1,
+                        lifespan: 100 + Math.random() * 30,
+                        color: coloriCuoriCucciolo[Math.floor(Math.random() * coloriCuoriCucciolo.length)] // Colore casuale
+                    });
+                }
             }
         });
+
+        // AGGIUNTA: Funzione per disegnare il cucciolo
+        function disegnaCucciolo() {
+            // Aggiornamento posizione soft follow drago[15]
+            cucciolo.x += (drago[15].x - 30 - cucciolo.x) * 0.04;
+            cucciolo.y += (drago[15].y + 20 - cucciolo.y) * 0.04;
+
+            // Orientamento soft lag
+            let dx = drago[15].x - drago[17].x;
+            let dy = drago[15].y - drago[17].y;
+            cucciolo.angolo = Math.atan2(dy, dx);
+
+            ctx.save();
+            ctx.translate(cucciolo.x, cucciolo.y);
+            ctx.rotate(cucciolo.angolo);
+
+            // Caratteristiche cute: corpo più tondo, testa più grande proprozionata
+            const rC = 12; // Raggio cute head
+
+            // Body
+            ctx.fillStyle = coloreCucciolo;
+            ctx.beginPath();
+            ctx.ellipse(-15, 0, 18, rC * 0.8, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Tiny Cute Wings (scaled disegnaAla conceptually, but inline)
+            ctx.save();
+            ctx.translate(-15, 0); // Position on body
+            ctx.rotate(Math.sin(time * 8) * 0.2); // Faster cute flap
+            ctx.scale(0.4, 0.4); // Scale down
+            disegnaAla(0); // Simplified draw
+            ctx.scale(1, -1);
+            disegnaAla(0);
+            ctx.restore();
+
+            // Head
+            ctx.fillStyle = coloreCucciolo;
+            ctx.beginPath();
+            ctx.arc(0, 0, rC, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Occhi cute (più grandi)
+            ctx.fillStyle = "#ffffff";
+            ctx.beginPath(); ctx.arc(4, -4, 4, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(4, 4, 4, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#000000";
+            ctx.beginPath(); ctx.arc(5, -4, 2, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(5, 4, 2, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#ffffff"; // Cute glints
+            ctx.beginPath(); ctx.arc(6, -5, 1, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(6, 3, 1, 0, Math.PI * 2); ctx.fill();
+
+            // Tiny horns
+            ctx.strokeStyle = "#ffeaa7";
+            ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(-3, -8); ctx.quadraticCurveTo(-10, -15, -5, -20); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(-3, 8); ctx.quadraticCurveTo(-10, 15, -5, 20); ctx.stroke();
+
+            ctx.restore();
+        }
 
         function animate() {
             ctx.clearRect(0, 0, width, height);
 
-            // --- A. CALCOLO DINAMICA E DASH ---
             let targetX = mouse.x + Math.cos(time) * 30;
             let targetY = mouse.y + Math.sin(time * 0.8) * 30;
             
-            // Calcola distanza per l'accelerazione (Dash)
             let distanzaMouse = Math.hypot(targetX - drago[0].x, targetY - drago[0].y);
-            let speedMult = Math.min(distanzaMouse / 150, 2.5); // Fino a 2.5x di velocità
-            speedMult = Math.max(speedMult, 0.8); // Minimo di velocità
+            let speedMult = Math.min(distanzaMouse / 150, 2.5); 
+            speedMult = Math.max(speedMult, 0.8); 
 
-            time += 0.05 * speedMult; // Le ali sbattono più forte se scatta veloce
+            time += 0.05 * speedMult; 
             
-            // Decadimento chiusura bocca
             if(mouthOpen > 0) mouthOpen -= 0.05; 
             if(mouthOpen < 0) mouthOpen = 0;
 
-            // Timer battito palpebre
             if(Math.random() < 0.008) blinkTimer = 10;
             if(blinkTimer > 0) blinkTimer--;
 
-            // --- B. SFONDO IN PARALLASSE (Nuvole) ---
+            // --- SFONDO IN PARALLASSE (Nuvole) ---
             nuvole.forEach(n => {
-                n.y += n.speed * (1 + speedMult * 0.5); // Scorrono più veloci se il drago scatta
+                n.y += n.speed * (1 + speedMult * 0.5); 
                 if(n.y - n.r > height) {
                     n.y = -n.r;
                     n.x = Math.random() * width;
@@ -219,7 +293,7 @@
                 ctx.fill();
             });
 
-            // --- C. MOVIMENTO DEL DRAGO ---
+            // --- MOVIMENTO DEL DRAGO ---
             drago[0].x += (targetX - drago[0].x) * (0.1 * speedMult);
             drago[0].y += (targetY - drago[0].y) * (0.1 * speedMult);
 
@@ -234,7 +308,7 @@
                 }
             }
 
-            // --- D. SCINTILLE DALLA CODA ---
+            // --- SCINTILLE DALLA CODA ---
             if(Math.random() < 0.6) {
                 scintilleCoda.push({
                     x: drago[numPunti-1].x, y: drago[numPunti-1].y,
@@ -242,7 +316,7 @@
                     life: 1.0
                 });
             }
-            ctx.globalCompositeOperation = "screen"; // Effetto fusione luminosa
+            ctx.globalCompositeOperation = "screen"; 
             for(let i = scintilleCoda.length - 1; i >= 0; i--) {
                 let s = scintilleCoda[i];
                 s.x += s.vx; s.y += s.vy; s.life -= 0.03;
@@ -252,9 +326,9 @@
                 ctx.fillStyle = `rgba(255, 150, 0, ${s.life})`;
                 ctx.fill();
             }
-            ctx.globalCompositeOperation = "source-over"; // Ripristina modalità normale
+            ctx.globalCompositeOperation = "source-over"; 
 
-            // --- E. DISEGNO CORPO, ALI E ZAMPE ---
+            // --- DISEGNO CORPO, ALI E ZAMPE ---
             ctx.fillStyle = coloreSpine;
             for (let i = 2; i < numPunti - 5; i += 3) {
                 let dx = drago[i-1].x - drago[i+1].x;
@@ -294,6 +368,10 @@
             disegnaAla(flap);
             ctx.restore();
 
+            // --- DISEGNO CUCCIOLO (AGGIUNTA) ---
+            disegnaCucciolo();
+
+            // --- DISEGNO CORPO DRAGO ---
             for (let i = numPunti - 1; i >= 0; i--) {
                 ctx.save();
                 ctx.translate(drago[i].x, drago[i].y);
@@ -322,24 +400,21 @@
                 ctx.restore();
             }
 
-            // --- F. TESTA ARTICOLATA ---
+            // --- TESTA ARTICOLATA ---
             let angoloTesta = Math.atan2(drago[0].y - drago[2].y, drago[0].x - drago[2].x);
             
             ctx.save();
             ctx.translate(drago[0].x, drago[0].y);
             ctx.rotate(angoloTesta);
 
-            // Mascella inferiore (si apre rotando verso il basso)
             ctx.save();
             ctx.rotate(mouthOpen * 0.6); 
             ctx.fillStyle = coloreCorpo;
             ctx.beginPath(); ctx.ellipse(10, 8, 20, 10, 0, 0, Math.PI*2); ctx.fill();
-            // Interno bocca e gola
             ctx.fillStyle = "#4a0000";
             ctx.beginPath(); ctx.ellipse(12, 6, 16, 6, 0, 0, Math.PI*2); ctx.fill();
             ctx.restore();
 
-            // Cranio Superiore (Sopra la mascella)
             ctx.fillStyle = coloreCorpo;
             ctx.beginPath();
             ctx.ellipse(6, -2, 24, 16, 0, 0, Math.PI * 2);
@@ -349,15 +424,12 @@
             ctx.beginPath(); ctx.arc(24, -6, 2.5, 0, Math.PI * 2); ctx.fill(); // Narici
             ctx.beginPath(); ctx.arc(24, 2, 2.5, 0, Math.PI * 2); ctx.fill();
 
-            // Occhi (Con logica di Blink)
             if(blinkTimer > 0) {
-                // Occhi chiusi
                 ctx.strokeStyle = "#8c1c1c";
                 ctx.lineWidth = 2;
                 ctx.beginPath(); ctx.moveTo(6, -9); ctx.lineTo(14, -9); ctx.stroke();
                 ctx.beginPath(); ctx.moveTo(6, 5);  ctx.lineTo(14, 5);  ctx.stroke();
             } else {
-                // Occhi aperti e cattivi
                 ctx.fillStyle = "#ffcc00";
                 ctx.beginPath(); ctx.ellipse(10, -10, 5, 2.5, Math.PI/4, 0, Math.PI * 2); ctx.fill(); 
                 ctx.beginPath(); ctx.ellipse(10, 6, 5, 2.5, -Math.PI/4, 0, Math.PI * 2); ctx.fill();  
@@ -369,7 +441,6 @@
                 ctx.beginPath(); ctx.arc(12, 5, 1, 0, Math.PI * 2); ctx.fill();
             }
 
-            // Corna
             ctx.strokeStyle = "#e6b800";
             ctx.lineWidth = 6;
             ctx.lineCap = "round";
@@ -377,7 +448,6 @@
             ctx.beginPath(); ctx.moveTo(-2, 12); ctx.quadraticCurveTo(-25, 35, -5, 50); ctx.stroke();
             ctx.restore();
 
-            // --- ILLUMINAZIONE DINAMICA ---
             if (mouthOpen > 0.1) {
                 let glow = ctx.createRadialGradient(drago[0].x, drago[0].y, 0, drago[0].x, drago[0].y, 150);
                 glow.addColorStop(0, `rgba(255, 50, 50, ${mouthOpen * 0.4})`);
@@ -387,6 +457,27 @@
                 ctx.beginPath(); ctx.arc(drago[0].x, drago[0].y, 150, 0, Math.PI*2); ctx.fill();
                 ctx.globalCompositeOperation = "source-over";
             }
+
+            // --- CUORI COLORATI CUCCIOLO (AGGIUNTA) ---
+            ctx.save();
+            ctx.shadowBlur = 10;
+            for(let i = cuoriCucciolo.length - 1; i >= 0; i--) {
+                let c = cuoriCucciolo[i];
+                c.x += c.vx; c.y += c.vy;
+                c.dimensione *= 1.01; 
+                c.alpha *= 0.98;
+                c.vx *= 0.99; c.vy *= 0.99;
+                c.lifespan--;
+
+                if (c.alpha <= 0 || c.lifespan <= 0) { cuoriCucciolo.splice(i, 1); continue; }
+
+                ctx.globalAlpha = c.alpha;
+                ctx.fillStyle = c.color;
+                ctx.shadowColor = c.color; // Bagliore colorato
+                disegnaPercorsoCuore(c.x, c.y - c.dimensione/2, c.dimensione);
+                ctx.fill();
+            }
+            ctx.restore();
 
             // --- G. CUORI "FEDE PUZZONA" ---
             ctx.save();
@@ -398,7 +489,7 @@
                 cuore.y += cuore.vy;
                 cuore.dimensione *= 1.015; 
                 cuore.alpha *= 0.98; 
-                cuore.vx *= 0.97; // Freno aerodinamico
+                cuore.vx *= 0.97; 
                 cuore.vy *= 0.97; 
                 cuore.lifespan--;
 
@@ -413,7 +504,7 @@
                 ctx.fill();
 
                 ctx.fillStyle = '#ffffff';
-                ctx.shadowBlur = 0; // Togliamo l'ombra dal testo per renderlo leggibile
+                ctx.shadowBlur = 0; 
                 ctx.font = `bold ${cuore.dimensione/4.5}px Arial, sans-serif`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
