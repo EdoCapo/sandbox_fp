@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>I miei Giochi Magici ✨</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&family=Pacifico&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      width: 100%;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a0e1e 0%, #2d1545 100%);
+      font-family: 'Nunito', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+    }
+
+    h1 {
+      font-family: 'Pacifico', cursive;
+      font-size: 3rem;
+      margin-bottom: 10px;
+      text-shadow: 0 4px 16px rgba(180, 80, 220, 0.5);
+      color: #fff;
+      text-align: center;
+    }
+
+    p.subtitle {
+      color: #e8b4f8;
+      font-size: 1.2rem;
+      margin-bottom: 50px;
+      letter-spacing: 0.1em;
+      text-align: center;
+    }
+
+    .container {
+      display: flex;
+      gap: 30px;
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 40px 30px;
+      text-align: center;
+      text-decoration: none;
+      color: white;
+      width: 280px;
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .card:hover {
+      transform: translateY(-10px);
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .card.pipi:hover {
+      box-shadow: 0 15px 40px rgba(180, 80, 220, 0.4);
+    }
+
+    .card.drago:hover {
+      box-shadow: 0 15px 40px rgba(217, 56, 56, 0.4);
+    }
+
+    .icon {
+      font-size: 5rem;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 10px;
+      color: #fff;
+    }
+
+    .card p {
+      color: #b0a0c0;
+      font-size: 0.95rem;
+    }
+
+  </style>
+</head>
+<body>
+
+  <h1>Scegli la tua avventura!</h1>
+  <p class="subtitle">Seleziona uno dei progetti qui sotto</p>
+
+  <div class="container">
+    <a href="pipi.html" class="card pipi">
+      <div class="icon">🐱</div>
+      <h2>Pipi & il Gomitolo</h2>
+      <p>Lancia il gomitolo e fai giocare la piccola Pipi!</p>
+    </a>
+
+    <a href="drago.html" class="card drago">
+      <div class="icon">🐉</div>
+      <h2>Il Drago di Fede</h2>
+      <p>Un drago magico e un cucciolo che sparano cuori!</p>
+    </a>
+  </div>
+
+</body>
+</html>
