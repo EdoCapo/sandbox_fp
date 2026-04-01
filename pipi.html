@@ -709,8 +709,8 @@ function drawPipi(x, y, facingRight, state, tailA, blinking, bounceAnim) {
     ex *= s;
     // eye glow
     const eyeGlow = ctx.createRadialGradient(ex, eyeY, 0, ex, eyeY, 7*s);
-    eyeGlow.addColorStop(0,'rgba(100,220,120,0.3)');
-    eyeGlow.addColorStop(1,'rgba(100,220,120,0)');
+    eyeGlow.addColorStop(0,'rgba(234,239,44,0.3)');
+    eyeGlow.addColorStop(1,'rgba(234,239,44,0)');
     ctx.fillStyle = eyeGlow;
     ctx.beginPath();
     ctx.arc(ex, eyeY, 8*s, 0, Math.PI*2);
