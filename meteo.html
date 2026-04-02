@@ -4,24 +4,25 @@
   <meta charset="UTF-8">
   <title>Meteo Generativo 🌧️</title>
   <style>
-    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: sans-serif; background: #87CEEB; transition: background 1s ease; }
+    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Nunito', sans-serif; background: #87CEEB; transition: background 1.5s ease; }
     canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; pointer-events: none; }
-    #ui { position: relative; z-index: 10; padding: 20px; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+    #ui { position: relative; z-index: 10; padding: 30px; color: white; text-shadow: 0 2px 6px rgba(0,0,0,0.6); }
     h1 { margin: 0 0 10px 0; font-size: 3rem; }
-    .controls { display: flex; gap: 10px; margin-top: 20px; }
-    button { padding: 10px 15px; border: none; border-radius: 8px; background: rgba(255,255,255,0.2); color: white; cursor: pointer; backdrop-filter: blur(5px); font-weight: bold; transition: 0.2s; }
-    button:hover { background: rgba(255,255,255,0.4); }
+    .controls { display: flex; gap: 15px; margin-top: 20px; flex-wrap: wrap; }
+    button { padding: 12px 20px; border: none; border-radius: 12px; background: rgba(255,255,255,0.2); color: white; cursor: pointer; backdrop-filter: blur(5px); font-size: 1rem; font-weight: bold; transition: all 0.3s; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+    button:hover { background: rgba(255,255,255,0.4); transform: translateY(-3px); }
   </style>
 </head>
 <body>
 
   <div id="ui">
     <h1 id="city">Soleggiato</h1>
-    <p>Modalità Simulazione (Usa i tasti per cambiare il clima)</p>
+    <p>Modalità Simulazione Climatica</p>
     <div class="controls">
       <button onclick="setWeather('clear')">☀️ Sole</button>
       <button onclick="setWeather('rain')">🌧️ Pioggia</button>
       <button onclick="setWeather('snow')">❄️ Neve</button>
+      <button onclick="setWeather('wind')">🌬️ Vento Forte</button>
     </div>
   </div>
 
@@ -40,23 +41,35 @@
     resize();
 
     let particles = [];
-    let currentWeather = 'clear'; // 'clear', 'rain', 'snow'
+    let leaves = [];
+    let currentWeather = 'clear'; 
+    let time = 0;
+    let targetWind = 0;
+    let currentWind = 0;
 
     function setWeather(type) {
       currentWeather = type;
       particles = [];
       const title = document.getElementById('city');
+      
       if (type === 'clear') {
-        document.body.style.background = '#87CEEB';
+        document.body.style.background = 'linear-gradient(to bottom, #4facfe 0%, #00f2fe 100%)';
         title.innerText = "Soleggiato";
+        targetWind = 0.5; // Brezza leggera
       } else if (type === 'rain') {
-        document.body.style.background = '#4a5568';
+        document.body.style.background = 'linear-gradient(to bottom, #2c3e50 0%, #3498db 100%)';
         title.innerText = "Pioggia Battente";
-        for(let i=0; i<300; i++) particles.push(createParticle());
+        targetWind = 2;
+        for(let i=0; i<400; i++) particles.push(createParticle());
       } else if (type === 'snow') {
-        document.body.style.background = '#a0aec0';
+        document.body.style.background = 'linear-gradient(to bottom, #83a4d4 0%, #b6fbff 100%)';
         title.innerText = "Nevicata";
-        for(let i=0; i<200; i++) particles.push(createParticle());
+        targetWind = 1;
+        for(let i=0; i<300; i++) particles.push(createParticle());
+      } else if (type === 'wind') {
+        document.body.style.background = 'linear-gradient(to bottom, #b87333 0%, #d4a373 100%)';
+        title.innerText = "Vento Autunnale";
+        targetWind = 12; // Vento molto forte
       }
     }
 
@@ -64,32 +77,100 @@
       return {
         x: Math.random() * width,
         y: Math.random() * height - height,
-        speed: currentWeather === 'rain' ? Math.random() * 10 + 10 : Math.random() * 2 + 1,
-        length: currentWeather === 'rain' ? Math.random() * 20 + 10 : Math.random() * 3 + 2,
-        drift: currentWeather === 'snow' ? Math.random() * 2 - 1 : 0
+        speed: currentWeather === 'rain' ? Math.random() * 15 + 15 : Math.random() * 3 + 1,
+        length: currentWeather === 'rain' ? Math.random() * 20 + 10 : Math.random() * 4 + 2,
+        drift: currentWeather === 'snow' ? (Math.random() * 2 - 1) : 0
       };
+    }
+
+    function spawnLeaf(x, y) {
+      if(leaves.length < 150 && Math.random() < 0.2) {
+        leaves.push({
+          x: x, y: y,
+          vx: currentWind * Math.random() * 2 + 2,
+          vy: Math.random() * 2 + 1,
+          angle: Math.random() * 360,
+          spin: Math.random() * 10 - 5,
+          color: Math.random() > 0.5 ? '#d35400' : '#e67e22'
+        });
+      }
+    }
+
+    // Algoritmo Frattale per l'Albero
+    function drawTree(startX, startY, len, angle, branchWidth, depth) {
+      ctx.beginPath();
+      ctx.save();
+      
+      // Colore del tronco/rami
+      ctx.strokeStyle = depth < 3 ? '#2c1e16' : '#3e2723';
+      ctx.fillStyle = '#27ae60';
+      ctx.lineWidth = branchWidth;
+      
+      ctx.translate(startX, startY);
+      
+      // Applica la flessione del vento basata sulla profondità (i rami sottili si piegano di più)
+      let windBend = Math.sin(time + depth) * currentWind * (depth * 0.2);
+      ctx.rotate((angle + windBend) * Math.PI/180);
+      
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0, -len);
+      ctx.lineCap = "round";
+      ctx.stroke();
+
+      if (depth < 8) {
+        // Genera due rami figli
+        drawTree(0, -len, len * 0.75, -25, branchWidth * 0.7, depth + 1);
+        drawTree(0, -len, len * 0.75, 25, branchWidth * 0.7, depth + 1);
+      } else {
+        // Foglie alla fine dei rami
+        ctx.beginPath();
+        let leafColor = currentWeather === 'wind' ? '#d35400' : (currentWeather === 'snow' ? '#ffffff' : '#2ecc71');
+        ctx.fillStyle = leafColor;
+        ctx.arc(0, -len, 8, 0, Math.PI*2);
+        ctx.fill();
+        
+        // Se c'è vento forte, stacca le foglie
+        if (currentWeather === 'wind' && Math.random() < 0.05) {
+            let absMatrix = ctx.getTransform();
+            spawnLeaf(absMatrix.e, absMatrix.f);
+        }
+      }
+      ctx.restore();
     }
 
     function animate() {
       ctx.clearRect(0, 0, width, height);
+      time += 0.05;
+      
+      // Transizione fluida della forza del vento
+      currentWind += (targetWind - currentWind) * 0.02;
 
+      // Disegna un pavimento
+      ctx.fillStyle = currentWeather === 'snow' ? '#ecf0f1' : '#27ae60';
+      if(currentWeather === 'wind') ctx.fillStyle = '#8e44ad';
+      ctx.fillRect(0, height - 50, width, 50);
+
+      // Disegna l'Albero Frattale al centro-destra
+      drawTree(width * 0.7, height - 50, 120, 0, 18, 1);
+      // Disegna un secondo albero più piccolo
+      drawTree(width * 0.2, height - 50, 80, 0, 12, 2);
+
+      // Animazione Particelle (Pioggia/Neve)
       ctx.fillStyle = 'white';
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
       ctx.lineWidth = 2;
 
       particles.forEach(p => {
         p.y += p.speed;
-        p.x += p.drift;
+        p.x += p.drift + currentWind; // Il vento influenza pioggia e neve
 
-        if (p.y > height) {
-          p.y = -20;
-          p.x = Math.random() * width;
-        }
+        if (p.y > height) { p.y = -20; p.x = Math.random() * width; }
+        if (p.x > width) { p.x = -20; }
 
         if (currentWeather === 'rain') {
           ctx.beginPath();
           ctx.moveTo(p.x, p.y);
-          ctx.lineTo(p.x, p.y + p.length);
+          ctx.lineTo(p.x - currentWind*0.5, p.y + p.length);
           ctx.stroke();
         } else if (currentWeather === 'snow') {
           ctx.beginPath();
@@ -98,17 +179,27 @@
         }
       });
 
+      // Animazione Foglie
+      for (let i = leaves.length - 1; i >= 0; i--) {
+        let l = leaves[i];
+        l.x += l.vx;
+        l.y += l.vy;
+        l.angle += l.spin;
+        
+        ctx.save();
+        ctx.translate(l.x, l.y);
+        ctx.rotate(l.angle * Math.PI/180);
+        ctx.fillStyle = l.color;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 8, 4, 0, 0, Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+
+        if(l.y > height || l.x > width) leaves.splice(i, 1);
+      }
+
       requestAnimationFrame(animate);
     }
-
-    // Per integrare una vera API in futuro:
-    // async function fetchWeather(city) {
-    //   const apiKey = 'LA_TUA_API_KEY_QUI';
-    //   const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}`);
-    //   const data = await res.json();
-    //   const condition = data.weather[0].main.toLowerCase(); // es. 'rain', 'snow', 'clear'
-    //   setWeather(condition);
-    // }
 
     setWeather('clear');
     animate();
