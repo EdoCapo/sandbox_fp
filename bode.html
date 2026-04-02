@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Diagramma di Bode Interattivo 📈</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; padding: 0; background: #0f172a; color: #e2e8f0; font-family: 'Nunito', sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow: hidden; }
+    #ui { padding: 20px; text-align: center; background: rgba(30, 41, 59, 0.8); width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 10; border-bottom: 2px solid #10b981; }
+    h1 { margin: 0 0 5px 0; font-size: 2rem; color: #10b981; }
+    
+    .sliders { display: flex; gap: 40px; justify-content: center; margin-top: 15px; flex-wrap: wrap; }
+    .slider-group { display: flex; flex-direction: column; align-items: center; background: #1e293b; padding: 10px 20px; border-radius: 8px; border: 1px solid #334155; }
+    label { margin-bottom: 5px; font-weight: bold; color: #94a3b8; }
+    input[type=range] { cursor: pointer; width: 150px; }
+    .val-display { color: #f8fafc; font-weight: bold; margin-top: 5px; }
+
+    .canvas-container { display: flex; flex-direction: column; gap: 10px; padding: 20px; width: 100%; max-width: 1000px; }
+    canvas { background: #1e293b; border-radius: 8px; border: 1px solid #475569; width: 100%; height: 300px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+    h2 { margin: 0; font-size: 1.2rem; color: #cbd5e1; padding-left: 10px; }
+  </style>
+</head>
+<body>
+
+  <div id="ui">
+    <h1>Analisi in Frequenza (Bode)</h1>
+    <p>Sposta Poli, Zeri e Guadagno per vedere la risposta in Modulo e Fase.</p>
+    
+    <div class="sliders">
+      <div class="slider-group">
+        <label>Guadagno K (dB)</label>
+        <input type="range" id="sliderK" min="-40" max="40" step="1" value="0">
+        <div class="val-display" id="valK">0 dB</div>
+      </div>
+      <div class="slider-group">
+        <label>Polo ω_p (rad/s)</label>
+        <input type="range" id="sliderP" min="0" max="4" step="0.1" value="1">
+        <div class="val-display" id="valP">10^1 = 10</div>
+      </div>
+      <div class="slider-group">
+        <label>Zero ω_z (rad/s)</label>
+        <input type="range" id="sliderZ" min="0" max="4" step="0.1" value="3">
+        <div class="val-display" id="valZ">10^3 = 1000</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="canvas-container">
+    <h2>Modulo |H(jω)| [dB]</h2>
+    <canvas id="magCanvas"></canvas>
+    <h2>Fase ∠H(jω) [Gradi]</h2>
+    <canvas id="phaseCanvas"></canvas>
+  </div>
+
+  <script>
+    const magCanvas = document.getElementById('magCanvas');
+    const phaseCanvas = document.getElementById('phaseCanvas');
+    const ctxMag = magCanvas.getContext('2d');
+    const ctxPhase = phaseCanvas.getContext('2d');
+
+    const sK = document.getElementById('sliderK');
+    const sP = document.getElementById('sliderP');
+    const sZ = document.getElementById('sliderZ');
+
+    let W, H;
+    const wMin = 0; // 10^0 = 1
+    const wMax = 5; // 10^5 = 100000
+
+    function resize() {
+      W = magCanvas.width = phaseCanvas.width = magCanvas.clientWidth;
+      H = magCanvas.height = phaseCanvas.height = magCanvas.clientHeight;
+      draw();
+    }
+    window.addEventListener('resize', resize);
+
+    function updateValues() {
+      document.getElementById('valK').innerText = sK.value + " dB";
+      document.getElementById('valP').innerText = "10^" + sP.value + " = " + Math.pow(10, sP.value).toFixed(1);
+      document.getElementById('valZ').innerText = "10^" + sZ.value + " = " + Math.pow(10, sZ.value).toFixed(1);
+      draw();
+    }
+
+    [sK, sP, sZ].forEach(el => el.addEventListener('input', updateValues));
+
+    function drawGrid(ctx, isPhase) {
+      ctx.clearRect(0, 0, W, H);
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 1;
+
+      // Linee verticali (decadi logaritmiche)
+      for (let i = wMin; i <= wMax; i++) {
+        let x = ((i - wMin) / (wMax - wMin)) * W;
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+        
+        ctx.fillStyle = '#64748b';
+        ctx.font = '12px Arial';
+        ctx.fillText("10^" + i, x + 5, H - 5);
+      }
+
+      // Asse 0 centrale
+      let y0 = isPhase ? H/2 : H/2;
+      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+      ctx.beginPath(); ctx.moveTo(0, y0); ctx.lineTo(W, y0); ctx.stroke();
+    }
+
+    function draw() {
+      drawGrid(ctxMag, false);
+      drawGrid(ctxPhase, true);
+
+      let K_dB = parseFloat(sK.value);
+      let w_p = Math.pow(10, parseFloat(sP.value));
+      let w_z = Math.pow(10, parseFloat(sZ.value));
+
+      ctxMag.beginPath();
+      ctxPhase.beginPath();
+      ctxMag.strokeStyle = '#10b981'; // Verde smeraldo
+      ctxPhase.strokeStyle = '#f59e0b'; // Arancione
+      ctxMag.lineWidth = 3;
+      ctxPhase.lineWidth = 3;
+
+      for (let px = 0; px <= W; px++) {
+        // Mappatura lineare dei pixel all'esponente logaritmico
+        let exponent = wMin + (px / W) * (wMax - wMin);
+        let w = Math.pow(10, exponent);
+
+        // Calcolo Modulo in dB: K_dB + 20log|1+jw/wz| - 20log|1+jw/wp|
+        let mag = K_dB + 20 * Math.log10(Math.sqrt(1 + Math.pow(w/w_z, 2))) - 20 * Math.log10(Math.sqrt(1 + Math.pow(w/w_p, 2)));
+        
+        // Calcolo Fase in Gradi: atan(w/wz) - atan(w/wp)
+        let phaseRad = Math.atan(w/w_z) - Math.atan(w/w_p);
+        let phaseDeg = phaseRad * (180 / Math.PI);
+
+        // Mappatura sui Canvas (Mag: centro=0dB, scala 2px/dB. Fase: centro=0°, scala 1.5px/grado)
+        let yMag = (H / 2) - (mag * 2);
+        let yPhase = (H / 2) - (phaseDeg * 1.5);
+
+        if (px === 0) {
+          ctxMag.moveTo(px, yMag);
+          ctxPhase.moveTo(px, yPhase);
+        } else {
+          ctxMag.lineTo(px, yMag);
+          ctxPhase.lineTo(px, yPhase);
+        }
+      }
+
+      ctxMag.stroke();
+      ctxPhase.stroke();
+    }
+
+    // Inizializza
+    setTimeout(resize, 100);
+  </script>
+</body>
+</html>
