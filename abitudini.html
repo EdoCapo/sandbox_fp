@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Abitudini Cosmiche 🪐</title>
+  <style>
+    body { margin: 0; padding: 20px; background: #0b0c10; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; min-height: 100vh; overflow-x: hidden; }
+    h1 { text-align: center; color: #66fcf1; font-size: 2.5rem; text-shadow: 0 0 10px rgba(102, 252, 241, 0.5); }
+    .input-area { text-align: center; margin-bottom: 40px; }
+    input { padding: 12px; border-radius: 20px; border: none; outline: none; font-size: 1rem; width: 250px; text-align: center; }
+    button { padding: 12px 24px; border-radius: 20px; border: none; background: #45a29e; color: white; font-weight: bold; cursor: pointer; margin-left: 10px; transition: 0.3s; }
+    button:hover { background: #66fcf1; color: black; box-shadow: 0 0 15px #66fcf1; }
+    
+    #galaxy { display: flex; flex-wrap: wrap; gap: 40px; justify-content: center; padding: 20px; }
+    
+    .habit-container { display: flex; flex-direction: column; align-items: center; width: 120px; }
+    .planet {
+      width: 80px; height: 80px; border-radius: 50%; cursor: pointer;
+      background: radial-gradient(circle at 30% 30%, #555, #222);
+      box-shadow: inset -10px -10px 20px rgba(0,0,0,0.5);
+      transition: all 0.5s ease; position: relative;
+    }
+    .planet::after {
+      content: '🗑️'; position: absolute; top: -10px; right: -10px; font-size: 1.2rem;
+      opacity: 0; transition: 0.3s; background: rgba(0,0,0,0.7); border-radius: 50%; padding: 5px;
+    }
+    .planet:hover::after { opacity: 1; }
+    
+    .planet.completed {
+      background: radial-gradient(circle at 30% 30%, var(--c1), var(--c2));
+      box-shadow: 0 0 30px var(--c1), inset -10px -10px 20px rgba(0,0,0,0.3);
+    }
+    .habit-name { margin-top: 15px; font-size: 0.9rem; text-align: center; color: #c5c6c7; font-weight: bold; letter-spacing: 1px; }
+  </style>
+</head>
+<body>
+
+  <h1>La tua Galassia</h1>
+  <div class="input-area">
+    <input type="text" id="habitInput" placeholder="Nuova abitudine (es. Bere Acqua)">
+    <button onclick="addHabit()">Crea Pianeta</button>
+  </div>
+
+  <div id="galaxy"></div>
+
+  <script>
+    let habits = JSON.parse(localStorage.getItem('cosmicHabits')) || [];
+    const colors = [
+      ['#ff7eb3', '#ff758c'], ['#84fab0', '#8fd3f4'], ['#fbc2eb', '#a6c1ee'],
+      ['#fccb90', '#d57eeb'], ['#e0c3fc', '#8ec5fc']
+    ];
+
+    function getTodayStr() {
+      return new Date().toDateString();
+    }
+
+    function saveAndRender() {
+      localStorage.setItem('cosmicHabits', JSON.stringify(habits));
+      renderGalaxy();
+    }
+
+    function addHabit() {
+      const input = document.getElementById('habitInput');
+      if (!input.value.trim()) return;
+      
+      habits.push({
+        id: Date.now(),
+        name: input.value.trim(),
+        colorPair: colors[habits.length % colors.length],
+        lastCompleted: null
+      });
+      input.value = '';
+      saveAndRender();
+    }
+
+    function toggleHabit(id) {
+      const habit = habits.find(h => h.id === id);
+      const today = getTodayStr();
+      habit.lastCompleted = (habit.lastCompleted === today) ? null : today; // Toggle
+      saveAndRender();
+    }
+
+    function deleteHabit(e, id) {
+      e.stopPropagation(); // Evita di attivare il toggle del pianeta
+      habits = habits.filter(h => h.id !== id);
+      saveAndRender();
+    }
+
+    function renderGalaxy() {
+      const galaxy = document.getElementById('galaxy');
+      galaxy.innerHTML = '';
+      const today = getTodayStr();
+
+      habits.forEach(habit => {
+        const isDone = habit.lastCompleted === today;
+        const div = document.createElement('div');
+        div.className = 'habit-container';
+        
+        const planet = document.createElement('div');
+        planet.className = `planet ${isDone ? 'completed' : ''}`;
+        planet.style.setProperty('--c1', habit.colorPair[0]);
+        planet.style.setProperty('--c2', habit.colorPair[1]);
+        planet.onclick = () => toggleHabit(habit.id);
+
+        const deleteBtn = document.createElement('div');
+        planet.addEventListener('click', function(e) {
+            // Se si clicca nel quadrante in alto a destra (dove c'è il cestino)
+            const rect = planet.getBoundingClientRect();
+            if(e.clientX > rect.right - 25 && e.clientY < rect.top + 25) {
+                deleteHabit(e, habit.id);
+            }
+        });
+
+        const name = document.createElement('div');
+        name.className = 'habit-name';
+        name.innerText = habit.name;
+
+        div.appendChild(planet);
+        div.appendChild(name);
+        galaxy.appendChild(div);
+      });
+    }
+
+    renderGalaxy(); // Carica al primo avvio
+  </script>
+</body>
+</html>
