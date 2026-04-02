@@ -56,11 +56,11 @@
 
   <div id="ui">
     <h1>Serie di Fourier Interattiva</h1>
-    <p>Somma di onde sinusoidali per approssimare un'onda quadra.</p>
+    <p>Come la somma di onde sinusoidali (armoniche) approssima un segnale complesso.</p>
     <div class="slider-container">
       <label for="harmonics">Numero di Armoniche (N):</label>
-      <input type="range" id="harmonics" min="1" max="50" value="5">
-      <span id="n-value">5</span>
+      <input type="range" id="harmonics" min="1" max="50" value="3">
+      <span id="n-value">3</span>
     </div>
   </div>
 
@@ -75,7 +75,6 @@
     let width, height;
     let time = 0;
     let wave = [];
-    let path = [];
 
     function resize() {
       width = canvas.width = window.innerWidth;
@@ -86,39 +85,45 @@
 
     slider.addEventListener('input', (e) => {
       nValue.innerText = e.target.value;
-      wave = []; // Pulisce l'onda quando si cambia il valore per evitare artefatti
+      wave = []; 
     });
 
     function draw() {
       ctx.fillStyle = '#0f172a';
       ctx.fillRect(0, 0, width, height);
 
-      // Posizione iniziale del primo cerchio (centro-sinistra)
-      let x = width * 0.25;
-      let y = height / 2;
       let nTerms = parseInt(slider.value);
+      const timeStep = 0.03; // Velocità dello scorrimento
+
+      // ==========================================
+      // 1. SEZIONE SUPERIORE: Epicicli e Somma
+      // ==========================================
+      let topY = height * 0.3;
+      let x = width * 0.25;
+      let y = topY;
+
+      // Disegna il testo della sezione
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '16px Nunito';
+      ctx.fillText("Composizione tramite epicicli rotanti", 20, 30);
 
       for (let i = 0; i < nTerms; i++) {
         let prevX = x;
         let prevY = y;
-
-        // Per un'onda quadra, usiamo solo i termini dispari: 1, 3, 5, 7...
         let n = i * 2 + 1;
-        
-        // Il raggio è proporzionale a 4 / (n * PI)
         let radius = 100 * (4 / (n * Math.PI));
         
         x += radius * Math.cos(n * time);
         y += radius * Math.sin(n * time);
 
-        // Disegna il cerchio vuoto
+        // Cerchio
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.arc(prevX, prevY, radius, 0, Math.PI * 2);
         ctx.stroke();
 
-        // Disegna il raggio che ruota
+        // Raggio
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
         ctx.beginPath();
         ctx.moveTo(prevX, prevY);
@@ -126,34 +131,83 @@
         ctx.stroke();
       }
 
-      // Salva il punto finale Y nell'array dell'onda (aggiungendolo all'inizio)
-      wave.unshift(y);
+      wave.unshift(y - topY); // Salviamo solo l'offset rispetto al centro
+      if (wave.length > 1000) wave.pop();
 
-      // Limita la lunghezza dell'onda tracciata per non riempire la memoria
-      if (wave.length > 800) {
-        wave.pop();
-      }
-
-      // Disegna una linea che collega l'ultimo cerchio all'inizio dell'onda tracciata
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
+      // Linea di collegamento
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(x, y);
-      ctx.lineTo(width * 0.5, wave[0]);
+      ctx.lineTo(width * 0.5, topY + wave[0]);
       ctx.stroke();
 
-      // Disegna l'onda tracciata
+      // Onda tracciata
       ctx.strokeStyle = '#38bdf8';
       ctx.lineWidth = 3;
       ctx.beginPath();
       for (let i = 0; i < wave.length; i++) {
-        ctx.lineTo(width * 0.5 + i, wave[i]);
+        ctx.lineTo(width * 0.5 + i, topY + wave[i]);
       }
       ctx.stroke();
 
-      // Rallenta il tempo se ci sono molti termini per apprezzare meglio il disegno
-      time -= 0.03;
 
+      // ==========================================
+      // 2. SEZIONE INFERIORE: Scomposizione delle onde
+      // ==========================================
+      let bottomY = height * 0.75;
+      
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText("Scomposizione delle armoniche (frequenze separate e loro somma)", 20, height * 0.55);
+
+      // Asse centrale
+      ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, bottomY);
+      ctx.lineTo(width, bottomY);
+      ctx.stroke();
+
+      // Disegna le singole onde (armoniche)
+      for (let i = 0; i < nTerms; i++) {
+        let n = i * 2 + 1;
+        let amplitude = 100 * (4 / (n * Math.PI));
+        
+        let hue = (i * 137.5) % 360; 
+        let alpha = Math.max(0.15, 0.8 - (i * 0.05)); // Onde più alte sono più trasparenti
+        
+        ctx.strokeStyle = `hsla(${hue}, 80%, 60%, ${alpha})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+
+        for(let px = 0; px < width; px++) {
+           let timeAtPixel = time + (px - width * 0.5) * timeStep;
+           let py = bottomY + amplitude * Math.sin(n * timeAtPixel);
+
+           if (px === 0) ctx.moveTo(px, py);
+           else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+      }
+
+      // Disegna la SOMMA delle onde in bianco in primo piano
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      for(let px = 0; px < width; px++) {
+          let timeAtPixel = time + (px - width * 0.5) * timeStep;
+          let sumY = 0;
+          for (let i = 0; i < nTerms; i++) {
+              let n = i * 2 + 1;
+              let amplitude = 100 * (4 / (n * Math.PI));
+              sumY += amplitude * Math.sin(n * timeAtPixel);
+          }
+          if (px === 0) ctx.moveTo(px, bottomY + sumY);
+          else ctx.lineTo(px, bottomY + sumY);
+      }
+      ctx.stroke();
+
+      time -= timeStep;
       requestAnimationFrame(draw);
     }
 
