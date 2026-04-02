@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Falling Sand Physics ⏳</title>
+  <style>
+    body { margin: 0; overflow: hidden; background: #111; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
+    #toolbar { padding: 15px; display: flex; gap: 15px; background: #222; width: 100%; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 10;}
+    .tool { padding: 10px 20px; background: #333; border: 2px solid transparent; color: white; cursor: pointer; font-weight: bold; border-radius: 8px; transition: 0.2s;}
+    .tool.active { border-color: white; transform: scale(1.05); }
+    canvas { background: #000; cursor: crosshair; image-rendering: pixelated; }
+  </style>
+</head>
+<body>
+
+  <div id="toolbar">
+    <button class="tool active" onclick="setElement(1, this)" style="border-color: #ffd700; color:#ffd700;">Sabbia</button>
+    <button class="tool" onclick="setElement(2, this)" style="color:#00aaff;">Acqua</button>
+    <button class="tool" onclick="setElement(3, this)" style="color:#888;">Muro</button>
+    <button class="tool" onclick="setElement(0, this)" style="color:#ff4444;">Gomma</button>
+    <button class="tool" onclick="clearGrid()" style="background:#550000;">Pulisci Tutto</button>
+  </div>
+
+  <canvas id="sandCanvas"></canvas>
+
+  <script>
+    const canvas = document.getElementById('sandCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Risoluzione: celle grandi 5 pixel per mantenere le performance alte
+    const CELL_SIZE = 5; 
+    let cols, rows, grid;
+
+    let currentElement = 1; // 0=Vuoto, 1=Sabbia, 2=Acqua, 3=Muro
+    const colors = ['#000000', '#ffd700', '#00aaff', '#555555'];
+
+    function init() {
+      cols = Math.floor(window.innerWidth / CELL_SIZE);
+      rows = Math.floor((window.innerHeight - 60) / CELL_SIZE); // -60 per la toolbar
+      canvas.width = cols * CELL_SIZE;
+      canvas.height = rows * CELL_SIZE;
+      grid = new Array(cols).fill().map(() => new Array(rows).fill(0));
+    }
+
+    function clearGrid() { grid = new Array(cols).fill().map(() => new Array(rows).fill(0)); }
+
+    function setElement(el, btn) {
+      currentElement = el;
+      document.querySelectorAll('.tool').forEach(b => b.classList.remove('active'));
+      if(btn) btn.classList.add('active');
+    }
+
+    // Input del mouse
+    let isDrawing = false;
+    canvas.addEventListener('mousedown', () => isDrawing = true);
+    window.addEventListener('mouseup', () => isDrawing = false);
+    canvas.addEventListener('mousemove', (e) => {
+      if (!isDrawing) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = Math.floor((e.clientX - rect.left) / CELL_SIZE);
+      const y = Math.floor((e.clientY - rect.top) / CELL_SIZE);
+      
+      // Crea un pennello di grandezza 3x3
+      for(let i = -1; i <= 1; i++) {
+        for(let j = -1; j <= 1; j++) {
+            if (x+i >= 0 && x+i < cols && y+j >= 0 && y+j < rows) {
+                // Se disegniamo sabbia o acqua, aggiungiamo un po' di casualità per non renderlo un blocco solido
+                if(currentElement === 3 || currentElement === 0 || Math.random() > 0.5) {
+                    grid[x+i][y+j] = currentElement;
+                }
+            }
+        }
+      }
+    });
+
+    // Logica degli Automi Cellulari
+    function updateGrid() {
+      // Scorriamo dal basso verso l'alto
+      for (let y = rows - 2; y >= 0; y--) {
+        // Direzione casuale orizzontale per evitare che collassi tutto da un lato
+        const dir = Math.random() > 0.5 ? 1 : -1;
+        
+        for (let i = 0; i < cols; i++) {
+          const x = dir === 1 ? i : (cols - 1 - i);
+          const state = grid[x][y];
+
+          if (state === 1) { // SABBIA
+            if (grid[x][y + 1] === 0 || grid[x][y + 1] === 2) { 
+              // Scende dritto (e scambia con l'acqua se ce l'ha sotto)
+              grid[x][y] = grid[x][y + 1]; grid[x][y + 1] = 1;
+            } else {
+              // Prova ai lati
+              let left = x > 0 && (grid[x - 1][y + 1] === 0 || grid[x - 1][y + 1] === 2);
+              let right = x < cols - 1 && (grid[x + 1][y + 1] === 0 || grid[x + 1][y + 1] === 2);
+              
+              if (left && right) {
+                if (Math.random() > 0.5) { grid[x][y] = grid[x-1][y+1]; grid[x-1][y+1] = 1; }
+                else { grid[x][y] = grid[x+1][y+1]; grid[x+1][y+1] = 1; }
+              } else if (left) { grid[x][y] = grid[x-1][y+1]; grid[x-1][y+1] = 1; }
+              else if (right) { grid[x][y] = grid[x+1][y+1]; grid[x+1][y+1] = 1; }
+            }
+          } 
+          else if (state === 2) { // ACQUA
+            if (grid[x][y + 1] === 0) {
+              grid[x][y] = 0; grid[x][y + 1] = 2; // Scende
+            } else {
+              let left = x > 0 && grid[x - 1][y] === 0;
+              let right = x < cols - 1 && grid[x + 1][y] === 0;
+              
+              if (left && right) {
+                if (Math.random() > 0.5) { grid[x][y] = 0; grid[x-1][y] = 2; }
+                else { grid[x][y] = 0; grid[x+1][y] = 2; }
+              } else if (left) { grid[x][y] = 0; grid[x-1][y] = 2; }
+              else if (right) { grid[x][y] = 0; grid[x+1][y] = 2; }
+            }
+          }
+        }
+      }
+    }
+
+    function drawGrid() {
+      ctx.fillStyle = colors[0];
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      for (let i = 0; i < cols; i++) {
+        for (let j = 0; j < rows; j++) {
+          if (grid[i][j] > 0) {
+            ctx.fillStyle = colors[grid[i][j]];
+            ctx.fillRect(i * CELL_SIZE, j * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+          }
+        }
+      }
+    }
+
+    function loop() {
+      updateGrid();
+      drawGrid();
+      requestAnimationFrame(loop);
+    }
+
+    init();
+    window.addEventListener('resize', init);
+    loop();
+  </script>
+</body>
+</html>
