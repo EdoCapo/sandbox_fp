@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Criterio di Stabilità di Nyquist 🔄</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; padding: 0; background: #0f172a; color: #e2e8f0; font-family: 'Nunito', sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow: hidden; }
+    #ui { padding: 20px; text-align: center; background: rgba(30, 41, 59, 0.8); width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.5); border-bottom: 2px solid #e74c3c; z-index: 10; }
+    h1 { margin: 0 0 10px 0; font-size: 2rem; color: #e74c3c; }
+    .slider-container { display: flex; align-items: center; justify-content: center; gap: 15px; margin-top: 15px; }
+    input[type=range] { width: 300px; cursor: pointer; }
+    #k-value { font-weight: bold; color: #fff; font-size: 1.2rem; min-width: 40px; }
+    canvas { display: block; background: #1e293b; border: 1px solid #475569; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+    .status { margin-top: 10px; font-weight: bold; font-size: 1.1rem; }
+  </style>
+</head>
+<body>
+
+  <div id="ui">
+    <h1>Criterio di Nyquist Interattivo</h1>
+    <p>Regola il guadagno 'k' per osservare la stabilità del sistema ad anello chiuso. (Funzione G(s) = k / (s^3 + 3s^2 + 2s))</p>
+    <div class="slider-container">
+      <label for="gainK">Guadagno k:</label>
+      <input type="range" id="gainK" min="1" max="100" value="3">
+      <span id="k-value">3</span>
+    </div>
+    <div id="status" class="status"></div>
+  </div>
+
+  <canvas id="nyquistCanvas"></canvas>
+
+  <script>
+    const canvas = document.getElementById('nyquistCanvas');
+    const ctx = canvas.getContext('2d');
+    const sliderK = document.getElementById('gainK');
+    const kValue = document.getElementById('k-value');
+    const statusDiv = document.getElementById('status');
+
+    let W, H;
+    const centerX = 0.5; // Centro del canvas
+    const centerY = 0.6;
+    const scale = 50; // Pixel per unità
+
+    function resize() {
+      W = canvas.width = window.innerWidth * 0.9;
+      H = canvas.height = window.innerHeight - document.getElementById('ui').offsetHeight - 50;
+      draw();
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    sliderK.addEventListener('input', (e) => {
+      kValue.innerText = e.target.value;
+      draw();
+    });
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      
+      const k = parseFloat(sliderK.value);
+      const cx = W * centerX;
+      const cy = H * centerY;
+
+      // Disegna gli assi
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(W, cy); ctx.stroke(); // Re
+      ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, H); ctx.stroke(); // Im
+
+      // Disegna il punto critico (-1, 0)
+      const criticalX = cx - scale;
+      const criticalY = cy;
+      ctx.fillStyle = '#ff4444';
+      ctx.beginPath(); ctx.arc(criticalX, criticalY, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = '14px sans-serif'; ctx.fillText("-1", criticalX - 15, criticalY + 20);
+
+      // Traccia diagramma di Nyquist per G(s) = k / (s(s+1)(s+2))
+      // Mappatura w da 0+ a infinito e da -infinito a 0-
+      
+      ctx.strokeStyle = '#e74c3c';
+      ctx.lineWidth = 2.5;
+      
+      // Parte w da 0+ a infinito
+      drawNyquistPath(ctx, k, cx, cy, 0.01, 10, true);
+      // Parte w da -infinito a 0-
+      drawNyquistPath(ctx, k, cx, cy, -10, -0.01, false);
+
+      // Valutazione Stabilità (Semplificata)
+      // Per s(s+1)(s+2), k critico è 6.
+      if (k < 6) {
+          statusDiv.innerText = "Sistema Stabile ad Anello Chiuso (Il diagramma non circonda -1)";
+          statusDiv.style.color = "#4ade80"; // Verde
+      } else if (k === 6) {
+          statusDiv.innerText = "Sistema Marginalmente Stabile (Il diagramma passa per -1)";
+          statusDiv.style.color = "#fbbf24"; // Giallo
+      } else {
+          statusDiv.innerText = "Sistema Instabile ad Anello Chiuso (Il diagramma circonda -1)";
+          statusDiv.style.color = "#f87171"; // Rosso
+      }
+    }
+
+    function drawNyquistPath(ctx, k, cx, cy, startW, endW, drawArrow) {
+      ctx.beginPath();
+      for (let w = startW; w <= endW; w += (endW-startW)/1000) {
+          if (w === 0) continue;
+          
+          // G(jw) = k / (jw(-w^2 + 3jw + 2)) = k / (-2jw^2 + 3j^2w + 2jw)
+          // Moltiplica per il coniugato...
+          let denom = Math.pow(w, 2) * Math.pow(-Math.pow(w,2) + 2, 2) + 9 * Math.pow(w, 4);
+          let Re = (k * 3 * Math.pow(w, 3)) / denom;
+          let Im = -(k * w * (-Math.pow(w, 2) + 2)) / denom;
+          
+          let px = cx + Re * scale;
+          let py = cy - Im * scale; // Inverte Y per piano complesso
+
+          if (w === startW) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+          
+          // Disegna una freccia a metà percorso
+          if(drawArrow && Math.abs(w - (startW+endW)/2) < 0.01) {
+            drawArrowHead(ctx, Re * scale, -Im * scale, cx, cy, startW < endW);
+          }
+      }
+      ctx.stroke();
+    }
+
+    function drawArrowHead(ctx, ReS, ImS, cx, cy, forward) {
+      // Semplificato: non perfetto ma mostra la direzione
+      ctx.save();
+      ctx.translate(cx + ReS, cy + ImS);
+      ctx.rotate(Math.PI/2 * (forward ? 1 : -1));
+      ctx.fillStyle = '#e74c3c';
+      ctx.beginPath(); ctx.moveTo(-5, -5); ctx.lineTo(0, 5); ctx.lineTo(5, -5); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+  </script>
+</body>
+</html>
