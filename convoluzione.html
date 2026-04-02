@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Convoluzione 2D Interattiva 🧮</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; padding: 0; background: #0f172a; color: #e2e8f0; font-family: 'Nunito', sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
+    #ui { padding: 20px; text-align: center; background: rgba(30, 41, 59, 0.8); width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.5); border-bottom: 2px solid #a855f7; margin-bottom: 30px; }
+    h1 { margin: 0 0 10px 0; font-size: 2rem; color: #a855f7; }
+    p { margin: 0 0 15px 0; color: #94a3b8; }
+    
+    .controls { display: flex; gap: 10px; justify-content: center; margin-bottom: 10px; }
+    button { padding: 8px 16px; border: none; border-radius: 8px; background: #334155; color: white; cursor: pointer; font-weight: bold; transition: 0.2s; }
+    button:hover, button.active { background: #a855f7; }
+
+    .workspace { display: flex; gap: 40px; align-items: flex-start; justify-content: center; flex-wrap: wrap; padding: 20px; }
+    
+    .matrix-container { display: flex; flex-direction: column; align-items: center; }
+    .matrix-title { margin-bottom: 15px; font-weight: bold; color: #cbd5e1; font-size: 1.2rem; }
+    
+    .grid { display: grid; gap: 2px; background: #334155; border: 2px solid #475569; padding: 2px; }
+    .cell { width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; background: #1e293b; color: white; font-size: 0.9rem; transition: background 0.1s, transform 0.1s; user-select: none; }
+    
+    .kernel-input { width: 100%; height: 100%; background: transparent; border: none; color: #a855f7; text-align: center; font-weight: bold; font-size: 1.1rem; outline: none; }
+    .kernel-input:focus { background: rgba(168, 85, 247, 0.2); }
+
+    /* Evidenziazioni */
+    .cell.highlight-input { background: #3b82f6; transform: scale(1.05); z-index: 10; box-shadow: 0 0 10px #3b82f6; }
+    .cell.highlight-output { background: #a855f7; transform: scale(1.1); box-shadow: 0 0 15px #a855f7; font-weight: bold; }
+
+    #formula-box { margin-top: 30px; background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #475569; min-width: 600px; text-align: center; font-family: monospace; font-size: 1.1rem; color: #38bdf8; min-height: 80px; display: flex; align-items: center; justify-content: center; }
+
+    .math-operator { font-size: 2rem; margin-top: 50px; color: #64748b; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <div id="ui">
+    <h1>Filtri e Convoluzione 2D</h1>
+    <p>Passa il mouse sulla matrice di <b>Output</b> per vedere come il Kernel scorre sull'Input.</p>
+    <div class="controls">
+      <button onclick="setKernel('edge', this)" class="active">Rilevamento Bordi</button>
+      <button onclick="setKernel('blur', this)">Sfocatura</button>
+      <button onclick="setKernel('sharpen', this)">Nitidezza</button>
+      <button onclick="setKernel('identity', this)">Identità</button>
+    </div>
+  </div>
+
+  <div class="workspace">
+    <!-- Input Grid (8x8) -->
+    <div class="matrix-container">
+      <div class="matrix-title">Immagine Input (8x8)</div>
+      <div class="grid" id="input-grid" style="grid-template-columns: repeat(8, 40px);"></div>
+    </div>
+
+    <div class="math-operator">∗</div>
+
+    <!-- Kernel Grid (3x3) -->
+    <div class="matrix-container">
+      <div class="matrix-title">Filtro / Kernel (3x3)</div>
+      <div class="grid" id="kernel-grid" style="grid-template-columns: repeat(3, 40px);"></div>
+    </div>
+
+    <div class="math-operator">=</div>
+
+    <!-- Output Grid (6x6) -->
+    <div class="matrix-container">
+      <div class="matrix-title">Output (6x6 Valid)</div>
+      <div class="grid" id="output-grid" style="grid-template-columns: repeat(6, 40px);"></div>
+    </div>
+  </div>
+
+  <div id="formula-box">
+    Passa il mouse sull'Output per vedere il calcolo matematico.
+  </div>
+
+  <script>
+    const inputSize = 8;
+    const kernelSize = 3;
+    const outputSize = inputSize - kernelSize + 1; // 6
+
+    let inputData = [];
+    let kernelData = [];
+
+    const kernels = {
+      edge: [[-1,-1,-1], [-1,8,-1], [-1,-1,-1]],
+      blur: [[0.1,0.1,0.1], [0.1,0.2,0.1], [0.1,0.1,0.1]], // Semplificato
+      sharpen: [[0,-1,0], [-1,5,-1], [0,-1,0]],
+      identity: [[0,0,0], [0,1,0], [0,0,0]]
+    };
+
+    function initGrids() {
+      // Genera un input visivamente interessante (es. un quadrato bianco al centro)
+      for (let y = 0; y < inputSize; y++) {
+        let row = [];
+        for (let x = 0; x < inputSize; x++) {
+          let val = (x >= 2 && x <= 5 && y >= 2 && y <= 5) ? 255 : 0;
+          row.push(val);
+        }
+        inputData.push(row);
+      }
+
+      // Imposta kernel iniziale
+      kernelData = JSON.parse(JSON.stringify(kernels['edge']));
+
+      renderInput();
+      renderKernel();
+      calculateAndRenderOutput();
+    }
+
+    function setKernel(type, btn) {
+      document.querySelectorAll('.controls button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      kernelData = JSON.parse(JSON.stringify(kernels[type]));
+      renderKernel();
+      calculateAndRenderOutput();
+    }
+
+    function renderInput() {
+      const container = document.getElementById('input-grid');
+      container.innerHTML = '';
+      for (let y = 0; y < inputSize; y++) {
+        for (let x = 0; x < inputSize; x++) {
+          let cell = document.createElement('div');
+          cell.className = 'cell';
+          cell.id = `in-${x}-${y}`;
+          cell.innerText = inputData[y][x];
+          // Colora in base al valore per sembrare un'immagine in scala di grigi
+          let c = inputData[y][x];
+          cell.style.color = c > 128 ? '#000' : '#fff';
+          cell.style.backgroundColor = `rgb(${c}, ${c}, ${c})`;
+          container.appendChild(cell);
+        }
+      }
+    }
+
+    function renderKernel() {
+      const container = document.getElementById('kernel-grid');
+      container.innerHTML = '';
+      for (let y = 0; y < kernelSize; y++) {
+        for (let x = 0; x < kernelSize; x++) {
+          let cell = document.createElement('div');
+          cell.className = 'cell';
+          
+          let input = document.createElement('input');
+          input.className = 'kernel-input';
+          input.value = kernelData[y][x];
+          input.type = 'text';
+          input.onchange = (e) => {
+            let val = parseFloat(e.target.value);
+            if(!isNaN(val)) { kernelData[y][x] = val; calculateAndRenderOutput(); }
+          };
+          
+          cell.appendChild(input);
+          container.appendChild(cell);
+        }
+      }
+    }
+
+    function calculateAndRenderOutput() {
+      const container = document.getElementById('output-grid');
+      container.innerHTML = '';
+      
+      for (let y = 0; y < outputSize; y++) {
+        for (let x = 0; x < outputSize; x++) {
+          let sum = 0;
+          for (let ky = 0; ky < kernelSize; ky++) {
+            for (let kx = 0; kx < kernelSize; kx++) {
+              sum += inputData[y + ky][x + kx] * kernelData[ky][kx];
+            }
+          }
+          
+          let cell = document.createElement('div');
+          cell.className = 'cell';
+          let finalVal = Math.round(sum * 10) / 10; // Arrotonda 1 decimale
+          cell.innerText = finalVal;
+          
+          // Mappatura colore per l'output (può essere negativo)
+          let intensity = Math.min(255, Math.max(0, finalVal));
+          cell.style.backgroundColor = finalVal < 0 ? '#450a0a' : `rgb(${intensity}, ${intensity}, ${intensity})`;
+          if(intensity > 128) cell.style.color = '#000';
+
+          // EVENTI DI HOVER PER L'INTERATTIVITÀ MAGICA
+          cell.onmouseenter = () => highlightArea(x, y, finalVal);
+          cell.onmouseleave = clearHighlights;
+          
+          container.appendChild(cell);
+        }
+      }
+    }
+
+    function highlightArea(outX, outY, result) {
+      clearHighlights();
+      let formulaBox = document.getElementById('formula-box');
+      let calcString = "";
+
+      for (let ky = 0; ky < kernelSize; ky++) {
+        for (let kx = 0; kx < kernelSize; kx++) {
+          let inX = outX + kx;
+          let inY = outY + ky;
+          
+          // Evidenzia input
+          document.getElementById(`in-${inX}-${inY}`).classList.add('highlight-input');
+          
+          // Costruisci stringa
+          let iVal = inputData[inY][inX];
+          let kVal = kernelData[ky][kx];
+          calcString += `(${iVal} × ${kVal})`;
+          if(ky !== 2 || kx !== 2) calcString += " + ";
+        }
+      }
+      calcString += `<br><br><b>= ${result}</b>`;
+      formulaBox.innerHTML = calcString;
+      
+      // Evidenzia la cella stessa
+      event.target.classList.add('highlight-output');
+    }
+
+    function clearHighlights() {
+      document.querySelectorAll('.highlight-input').forEach(el => el.classList.remove('highlight-input'));
+      document.querySelectorAll('.highlight-output').forEach(el => el.classList.remove('highlight-output'));
+      document.getElementById('formula-box').innerHTML = "Passa il mouse sull'Output per vedere il calcolo matematico.";
+    }
+
+    initGrids();
+  </script>
+</body>
+</html>
