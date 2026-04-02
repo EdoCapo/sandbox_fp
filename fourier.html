@@ -1,1 +1,163 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trasformata di Fourier 🌊</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: 'Nunito', sans-serif;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    #ui {
+      padding: 20px;
+      text-align: center;
+      background: rgba(30, 41, 59, 0.8);
+      backdrop-filter: blur(10px);
+      width: 100%;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+      z-index: 10;
+      border-bottom: 2px solid #38bdf8;
+    }
+    h1 { margin: 0 0 10px 0; font-size: 2rem; color: #38bdf8; }
+    p { margin: 0 0 15px 0; color: #94a3b8; }
+    .slider-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+    }
+    input[type=range] {
+      width: 300px;
+      cursor: pointer;
+    }
+    #n-value {
+      font-weight: bold;
+      color: #f8fafc;
+      font-size: 1.2rem;
+      min-width: 30px;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: calc(100vh - 120px);
+    }
+  </style>
+</head>
+<body>
 
+  <div id="ui">
+    <h1>Serie di Fourier Interattiva</h1>
+    <p>Somma di onde sinusoidali per approssimare un'onda quadra.</p>
+    <div class="slider-container">
+      <label for="harmonics">Numero di Armoniche (N):</label>
+      <input type="range" id="harmonics" min="1" max="50" value="5">
+      <span id="n-value">5</span>
+    </div>
+  </div>
+
+  <canvas id="fourierCanvas"></canvas>
+
+  <script>
+    const canvas = document.getElementById('fourierCanvas');
+    const ctx = canvas.getContext('2d');
+    const slider = document.getElementById('harmonics');
+    const nValue = document.getElementById('n-value');
+
+    let width, height;
+    let time = 0;
+    let wave = [];
+    let path = [];
+
+    function resize() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight - document.getElementById('ui').offsetHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    slider.addEventListener('input', (e) => {
+      nValue.innerText = e.target.value;
+      wave = []; // Pulisce l'onda quando si cambia il valore per evitare artefatti
+    });
+
+    function draw() {
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, width, height);
+
+      // Posizione iniziale del primo cerchio (centro-sinistra)
+      let x = width * 0.25;
+      let y = height / 2;
+      let nTerms = parseInt(slider.value);
+
+      for (let i = 0; i < nTerms; i++) {
+        let prevX = x;
+        let prevY = y;
+
+        // Per un'onda quadra, usiamo solo i termini dispari: 1, 3, 5, 7...
+        let n = i * 2 + 1;
+        
+        // Il raggio è proporzionale a 4 / (n * PI)
+        let radius = 100 * (4 / (n * Math.PI));
+        
+        x += radius * Math.cos(n * time);
+        y += radius * Math.sin(n * time);
+
+        // Disegna il cerchio vuoto
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(prevX, prevY, radius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Disegna il raggio che ruota
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.beginPath();
+        ctx.moveTo(prevX, prevY);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+      }
+
+      // Salva il punto finale Y nell'array dell'onda (aggiungendolo all'inizio)
+      wave.unshift(y);
+
+      // Limita la lunghezza dell'onda tracciata per non riempire la memoria
+      if (wave.length > 800) {
+        wave.pop();
+      }
+
+      // Disegna una linea che collega l'ultimo cerchio all'inizio dell'onda tracciata
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(width * 0.5, wave[0]);
+      ctx.stroke();
+
+      // Disegna l'onda tracciata
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      for (let i = 0; i < wave.length; i++) {
+        ctx.lineTo(width * 0.5 + i, wave[i]);
+      }
+      ctx.stroke();
+
+      // Rallenta il tempo se ci sono molti termini per apprezzare meglio il disegno
+      time -= 0.03;
+
+      requestAnimationFrame(draw);
+    }
+
+    draw();
+  </script>
+</body>
+</html>
