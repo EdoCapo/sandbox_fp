@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Pipi & il Gomitolo 🐱</title>
+  <title>Obi & il Gomitolo 🐱</title>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,700;0,800;1,400&family=Pacifico&display=swap" rel="stylesheet"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
@@ -128,7 +128,7 @@
 
 <div id="ui">
   <div id="title-block">
-    <h1>Pipi & il Gomitolo</h1>
+    <h1>Obi & il Gomitolo</h1>
   </div>
   <div id="score-block">
     <div id="score-label">rimbalzi</div>
@@ -137,7 +137,7 @@
 </div>
 
 <div id="bubble">😸</div>
-<div id="hint">trascina il gomitolo e lancialo a Pipi!</div>
+<div id="hint">trascina il gomitolo e lancialo a Obi!</div>
 
 <script>
 /* ══ SETUP ══ */
@@ -160,9 +160,9 @@ let hintGone    = false;
 let catchCooldown = 0; 
 
 const CATCH_MSGS = [
-  '😻 Pipi l\'ha preso!', '🐾 Che zampata!', '💜 Brava Pipi!',
-  '✨ Troppo forte!', '😸 Micio felice!', '🌸 Catto power!',
-  '💕 Che cucciola!', '🎉 Pipi campione!'
+  '😻 Obi l\'ha preso!', '🐾 Che zampata!', '💜 Bravo Obi!',
+  '✨ Troppo forte!', '😸 Micio felice!', '🌸 Gatto power!',
+  '🎉 Obi campione!'
 ];
 
 function showBubble(msg) {
@@ -462,11 +462,11 @@ function drawCatBed(c, x, y) {
   c.fillStyle = 'rgba(255,255,255,0.25)';
   c.fill();
 
-  // label "Pipi"
+  // label "Obi"
   c.font = 'bold 12px Nunito, sans-serif';
   c.fillStyle = 'rgba(180,80,60,0.7)';
   c.textAlign = 'center';
-  c.fillText('Pipi', 0, -4);
+  c.fillText('Obi', 0, -4);
 
   c.restore();
 }
@@ -600,7 +600,7 @@ function drawBall() {
   ctx.restore();
 }
 
-/* ══ BLACK CAT (Pipi) ══ */
+/* ══ BLACK CAT (Obi) ══ */
 const cat = {
   x:0, y:0, vx:0, vy:0,
   speed:5, width:60,
@@ -709,8 +709,8 @@ function drawPipi(x, y, facingRight, state, tailA, blinking, bounceAnim) {
     ex *= s;
     // eye glow
     const eyeGlow = ctx.createRadialGradient(ex, eyeY, 0, ex, eyeY, 7*s);
-    eyeGlow.addColorStop(0,'rgba(234,239,44,0.3)');
-    eyeGlow.addColorStop(1,'rgba(234,239,44,0)');
+    eyeGlow.addColorStop(0,'rgba(100,220,120,0.3)');
+    eyeGlow.addColorStop(1,'rgba(100,220,120,0)');
     ctx.fillStyle = eyeGlow;
     ctx.beginPath();
     ctx.arc(ex, eyeY, 8*s, 0, Math.PI*2);
