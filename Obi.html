@@ -189,7 +189,6 @@ window.addEventListener('resize', resize);
 resize();
 
 /* ══ BACKGROUND — cozy room ══ */
-// Precompute star positions
 const stars = Array.from({length:28}, () => ({
   x: Math.random(), y: Math.random() * 0.45,
   r: Math.random() * 2 + 0.8,
@@ -197,7 +196,6 @@ const stars = Array.from({length:28}, () => ({
 }));
 
 function drawBackground(ts) {
-  // Sky gradient (through window)
   const sky = ctx.createLinearGradient(0, 0, 0, H);
   sky.addColorStop(0,   '#1a0e2e');
   sky.addColorStop(0.55,'#2d1545');
@@ -205,7 +203,6 @@ function drawBackground(ts) {
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, W, H);
 
-  // Starry stars (visible through window area)
   stars.forEach(s => {
     const alpha = 0.5 + 0.5 * Math.sin(ts * 0.001 + s.twinkle);
     ctx.beginPath();
@@ -214,7 +211,6 @@ function drawBackground(ts) {
     ctx.fill();
   });
 
-  // Moon
   const moonX = W * 0.82, moonY = H * 0.12;
   const moonGlow = ctx.createRadialGradient(moonX, moonY, 0, moonX, moonY, 80);
   moonGlow.addColorStop(0, 'rgba(255,240,200,0.18)');
@@ -230,7 +226,6 @@ function drawBackground(ts) {
   ctx.fillStyle = '#2d1545';
   ctx.fill();
 
-  // ── WALL ──
   const wallH = H * 0.62;
   const wall = ctx.createLinearGradient(0, 0, 0, wallH);
   wall.addColorStop(0, '#f5e8d8');
@@ -238,7 +233,6 @@ function drawBackground(ts) {
   ctx.fillStyle = wall;
   ctx.fillRect(0, 0, W, wallH);
 
-  // Wallpaper tiny hearts pattern
   ctx.fillStyle = 'rgba(220,160,180,0.12)';
   for (let xi = 0; xi < W; xi += 36) {
     for (let yi = 0; yi < wallH; yi += 36) {
@@ -246,19 +240,16 @@ function drawBackground(ts) {
     }
   }
 
-  // ── WINDOW ──
   const winW = Math.min(W * 0.28, 220);
   const winH = winW * 1.1;
   const winX = W * 0.72 - winW/2;
   const winY = H * 0.05;
 
-  // window frame
   ctx.fillStyle = '#c89060';
   ctx.beginPath();
   ctx.roundRect(winX - 8, winY - 8, winW + 16, winH + 16, 8);
   ctx.fill();
 
-  // sky through window
   const winSky = ctx.createLinearGradient(0, winY, 0, winY + winH);
   winSky.addColorStop(0, '#1a0e2e');
   winSky.addColorStop(1, '#3d1f55');
@@ -267,7 +258,6 @@ function drawBackground(ts) {
   ctx.roundRect(winX, winY, winW, winH, 4);
   ctx.fill();
 
-  // stars in window
   stars.slice(0,10).forEach(s => {
     const sx = winX + s.x * winW;
     const sy = winY + s.y * winH * 0.7;
@@ -278,7 +268,6 @@ function drawBackground(ts) {
     ctx.fill();
   });
 
-  // window cross bars
   ctx.strokeStyle = '#c89060';
   ctx.lineWidth = 7;
   ctx.beginPath();
@@ -288,11 +277,9 @@ function drawBackground(ts) {
   ctx.lineTo(winX + winW, winY + winH/2);
   ctx.stroke();
 
-  // curtains
   drawCurtain(ctx, winX - 8, winY - 8, winH + 20, false);
   drawCurtain(ctx, winX + winW + 8, winY - 8, winH + 20, true);
 
-  // ── SHELF ──
   const shelfY = H * 0.37;
   const shelfX = W * 0.04;
   const shelfW = W * 0.26;
@@ -303,23 +290,19 @@ function drawBackground(ts) {
   ctx.fillStyle = '#a07040';
   ctx.fillRect(shelfX + 8, shelfY + 12, shelfW - 16, 6);
 
-  // small book 1
   ctx.fillStyle = '#e07070';
   ctx.fillRect(shelfX + 18, shelfY - 44, 18, 44);
   ctx.fillStyle = '#f8a8a8';
   ctx.fillRect(shelfX + 19, shelfY - 42, 4, 40);
 
-  // small book 2
   ctx.fillStyle = '#70a0e0';
   ctx.fillRect(shelfX + 40, shelfY - 52, 22, 52);
   ctx.fillStyle = '#a8c8f8';
   ctx.fillRect(shelfX + 41, shelfY - 50, 4, 48);
 
-  // small book 3
   ctx.fillStyle = '#70c880';
   ctx.fillRect(shelfX + 66, shelfY - 38, 16, 38);
 
-  // small plant pot
   ctx.fillStyle = '#c86040';
   ctx.beginPath();
   ctx.moveTo(shelfX + 100, shelfY);
@@ -338,7 +321,6 @@ function drawBackground(ts) {
   ctx.arc(shelfX + 90, shelfY - 38, 10, 0, Math.PI*2);
   ctx.fill();
 
-  // small heart frame
   ctx.fillStyle = '#f0d0e0';
   ctx.strokeStyle = '#d890b0';
   ctx.lineWidth = 2;
@@ -346,18 +328,15 @@ function drawBackground(ts) {
   ctx.roundRect(shelfX + 138, shelfY - 42, 32, 38, 3);
   ctx.fill();
   ctx.stroke();
-  // tiny heart inside
   ctx.fillStyle = '#e060a0';
   drawHeart(ctx, shelfX + 154, shelfY - 22, 8);
 
-  // ── FLOOR ──
   const floorGrad = ctx.createLinearGradient(0, wallH, 0, H);
   floorGrad.addColorStop(0, '#d4a060');
   floorGrad.addColorStop(1, '#a07038');
   ctx.fillStyle = floorGrad;
   ctx.fillRect(0, wallH, W, H - wallH);
 
-  // floor planks
   ctx.strokeStyle = 'rgba(120,70,20,0.18)';
   ctx.lineWidth = 1;
   for (let fx = 0; fx < W; fx += 90) {
@@ -367,28 +346,23 @@ function drawBackground(ts) {
     ctx.stroke();
   }
 
-  // skirting board
   ctx.fillStyle = '#e8d0a8';
   ctx.fillRect(0, wallH - 18, W, 18);
   ctx.fillStyle = '#d4b888';
   ctx.fillRect(0, wallH - 3, W, 3);
 
-  // ── CAT BED / CUCCIA ──
   const bedX = W * 0.75;
   const bedY = floorY;
   drawCatBed(ctx, bedX, bedY);
 
-  // ── RUG ──
   const rugX = W * 0.5 - 160;
   const rugY = floorY - 12;
   drawRug(ctx, rugX, rugY);
 
-  // ── FOOD BOWL ──
   const bowlX = W * 0.15;
   const bowlY = floorY;
   drawBowl(ctx, bowlX, bowlY);
 
-  // wall-floor shadow line
   ctx.fillStyle = 'rgba(100,50,0,0.15)';
   const sh = ctx.createLinearGradient(0, wallH, 0, wallH + 30);
   sh.addColorStop(0,'rgba(80,40,0,0.25)');
@@ -397,7 +371,6 @@ function drawBackground(ts) {
   ctx.fillRect(0, wallH - 2, W, 32);
 }
 
-/* ── Decorative helpers ── */
 function drawHeart(c, x, y, size) {
   c.save();
   c.translate(x, y);
@@ -427,7 +400,6 @@ function drawCurtain(c, x, topY, height, flipped) {
   c.lineTo(-w * 0.6, 0);
   c.closePath();
   c.fill();
-  // polka dots
   c.fillStyle = 'rgba(255,255,255,0.25)';
   for (let dy = 12; dy < height; dy += 22) {
     for (let dx = -4; dx > -w + 4; dx -= 16) {
@@ -440,55 +412,41 @@ function drawCurtain(c, x, topY, height, flipped) {
 }
 
 function drawCatBed(c, x, y) {
-  // bed base — oval cushion
   c.save();
   c.translate(x, y);
-
-  // bed outer rim
   c.beginPath();
   c.ellipse(0, -10, 68, 30, 0, 0, Math.PI*2);
   c.fillStyle = '#d4806a';
   c.fill();
-
-  // bed inner cushion
   c.beginPath();
   c.ellipse(0, -8, 52, 22, 0, 0, Math.PI*2);
   c.fillStyle = '#f0a888';
   c.fill();
-
-  // cushion highlight
   c.beginPath();
   c.ellipse(-8, -14, 20, 8, -0.3, 0, Math.PI*2);
   c.fillStyle = 'rgba(255,255,255,0.25)';
   c.fill();
-
-  // label "Obi"
   c.font = 'bold 12px Nunito, sans-serif';
   c.fillStyle = 'rgba(180,80,60,0.7)';
   c.textAlign = 'center';
   c.fillText('Obi', 0, -4);
-
   c.restore();
 }
 
 function drawRug(c, x, y) {
   c.save();
   c.translate(x, y);
-  // rug shadow
   c.fillStyle = 'rgba(0,0,0,0.12)';
   c.beginPath();
   c.ellipse(160, 8, 172, 14, 0, 0, Math.PI*2);
   c.fill();
-  // main rug
   c.fillStyle = '#8050b8';
   c.beginPath();
   c.roundRect(0, -18, 320, 20, 6);
   c.fill();
-  // rug border stripe
   c.fillStyle = '#e0a0f0';
   c.fillRect(8, -16, 304, 4);
   c.fillRect(8, -6,  304, 4);
-  // rug pattern
   c.fillStyle = 'rgba(255,255,255,0.15)';
   for (let rx = 30; rx < 300; rx += 40) {
     drawHeart(c, rx, -10, 5);
@@ -499,7 +457,6 @@ function drawRug(c, x, y) {
 function drawBowl(c, x, y) {
   c.save();
   c.translate(x, y);
-  // bowl
   c.beginPath();
   c.arc(0, -6, 22, 0, Math.PI*2);
   c.fillStyle = '#f0e0d0';
@@ -508,7 +465,6 @@ function drawBowl(c, x, y) {
   c.arc(0, -6, 18, 0, Math.PI*2);
   c.fillStyle = '#e0c8b0';
   c.fill();
-  // food (little circles)
   c.fillStyle = '#d08050';
   [-5, 0, 5].forEach(dx => {
     [-4, 1].forEach(dy => {
@@ -517,7 +473,6 @@ function drawBowl(c, x, y) {
       c.fill();
     });
   });
-  // cat paw label on bowl
   c.font = '10px Arial';
   c.fillStyle = '#c08060';
   c.textAlign = 'center';
@@ -536,16 +491,12 @@ function initBall() {
 }
 initBall();
 
-// Yarn colors — soft lavender/pink
-const YARN_COLORS = ['#d080e8','#c060d8','#9040b0'];
-
 function drawBall() {
   const r = ball.radius;
   ctx.save();
   ctx.translate(ball.x, ball.y);
   ctx.rotate(ball.angle);
 
-  // drop shadow
   if (!ball.isDragging) {
     const sh = ctx.createRadialGradient(0, r, 0, 0, r, r * 1.5);
     sh.addColorStop(0,'rgba(0,0,0,0.3)');
@@ -556,7 +507,6 @@ function drawBall() {
     ctx.fill();
   }
 
-  // sphere base
   const g = ctx.createRadialGradient(-r*.32,-r*.32, r*.05, 0, 0, r);
   g.addColorStop(0,   '#e8a0f0');
   g.addColorStop(0.5, '#c060d8');
@@ -566,7 +516,6 @@ function drawBall() {
   ctx.fillStyle = g;
   ctx.fill();
 
-  // yarn wraps
   for (let i = 0; i < 5; i++) {
     ctx.strokeStyle = `rgba(255,200,255,${0.10 + i*0.03})`;
     ctx.lineWidth = 1.8;
@@ -576,7 +525,6 @@ function drawBall() {
     ctx.stroke();
   }
 
-  // specular
   const hl = ctx.createRadialGradient(-r*.3,-r*.3, 0, -r*.3,-r*.3, r*.55);
   hl.addColorStop(0,'rgba(255,255,255,0.6)');
   hl.addColorStop(1,'rgba(255,255,255,0)');
@@ -585,7 +533,6 @@ function drawBall() {
   ctx.arc(0,0,r,0,Math.PI*2);
   ctx.fill();
 
-  // dragging aura
   if (ball.isDragging) {
     ctx.shadowBlur = 28;
     ctx.shadowColor = 'rgba(200,80,255,0.6)';
@@ -600,7 +547,7 @@ function drawBall() {
   ctx.restore();
 }
 
-/* ══ BLACK CAT (Obi) ══ */
+/* ══ TABBY CAT (Obi) ══ */
 const cat = {
   x:0, y:0, vx:0, vy:0,
   speed:5, width:60,
@@ -614,21 +561,27 @@ function initCat() {
 }
 initCat();
 
-function drawPipi(x, y, facingRight, state, tailA, blinking, bounceAnim) {
+const COLOR_CAT_BASE_START = '#ffb060';
+const COLOR_CAT_BASE_MID   = '#e89050';
+const COLOR_CAT_BASE_END   = '#a06030';
+const COLOR_CAT_STRIPE     = '#804010';
+const COLOR_CAT_ACCENT     = '#c87840';
+const COLOR_CAT_TAIL_TIP   = '#e0a070';
+const COLOR_CAT_PAW        = '#e0a070';
+
+function drawObi(x, y, facingRight, state, tailA, blinking, bounceAnim) {
   ctx.save();
   ctx.translate(x, y);
   if (!facingRight) ctx.scale(-1,1);
 
   const s = 1.05;
-  // cute bounce bob
   const bob = Math.sin(bounceAnim) * (state === 'run' ? 4 : 1.5);
 
   /* ── TAIL ── */
   ctx.save();
-  ctx.strokeStyle = '#2a2a3a';
+  ctx.strokeStyle = COLOR_CAT_ACCENT;
   ctx.lineWidth = 7 * s;
   ctx.lineCap = 'round';
-  // fluffy tail tip
   const tx = -14*s, ty = (-14 + bob)*s;
   ctx.beginPath();
   ctx.moveTo(tx, ty);
@@ -638,10 +591,9 @@ function drawPipi(x, y, facingRight, state, tailA, blinking, bounceAnim) {
     tx - 6*s,  ty - 44*s + Math.sin(tailA*1.2)*8*s
   );
   ctx.stroke();
-  // tip fluff
   ctx.beginPath();
   ctx.arc(tx - 6*s, ty - 44*s + Math.sin(tailA*1.2)*8*s, 7*s, 0, Math.PI*2);
-  ctx.fillStyle = '#3a3a4e';
+  ctx.fillStyle = COLOR_CAT_TAIL_TIP;
   ctx.fill();
   ctx.restore();
 
@@ -649,18 +601,34 @@ function drawPipi(x, y, facingRight, state, tailA, blinking, bounceAnim) {
   ctx.save();
   ctx.translate(0, bob*s);
   const bodyG = ctx.createRadialGradient(-2*s,-20*s, 2, -2*s,-20*s, 26*s);
-  bodyG.addColorStop(0, '#4a4a60');
-  bodyG.addColorStop(0.5,'#2a2a38');
-  bodyG.addColorStop(1,  '#15151e');
+  bodyG.addColorStop(0, COLOR_CAT_BASE_START);
+  bodyG.addColorStop(0.5, COLOR_CAT_BASE_MID);
+  bodyG.addColorStop(1, COLOR_CAT_BASE_END);
   ctx.fillStyle = bodyG;
   ctx.beginPath();
   ctx.ellipse(0, -18*s, 19*s, 23*s, 0, 0, Math.PI*2);
   ctx.fill();
 
-  // tummy patch (cute white/light belly)
+  /* ── STRISCE CORPO ── */
+  ctx.save();
+  ctx.strokeStyle = COLOR_CAT_STRIPE;
+  ctx.lineWidth = 1.8 * s;
+  ctx.lineCap = 'round';
+  for (let i = 0; i < 5; i++) {
+    const angle = Math.PI * 1.5 - (i - 2) * 0.4;
+    const rx = 19*s, ry = 23*s;
+    ctx.beginPath();
+    for (let t = angle - 0.2; t < angle + 0.2; t += 0.05) {
+        ctx.lineTo(rx * Math.cos(t), -18*s + ry * Math.sin(t));
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // tummy patch
   const tum = ctx.createRadialGradient(2*s,-14*s, 0, 2*s,-14*s, 10*s);
-  tum.addColorStop(0,'rgba(200,200,220,0.35)');
-  tum.addColorStop(1,'rgba(200,200,220,0)');
+  tum.addColorStop(0,'rgba(250,250,230,0.4)');
+  tum.addColorStop(1,'rgba(250,250,230,0)');
   ctx.fillStyle = tum;
   ctx.beginPath();
   ctx.ellipse(2*s,-14*s, 9*s, 12*s, 0, 0, Math.PI*2);
@@ -671,13 +639,25 @@ function drawPipi(x, y, facingRight, state, tailA, blinking, bounceAnim) {
   ctx.save();
   ctx.translate(0, bob*s);
   const headG = ctx.createRadialGradient(-3*s,-47*s, 2, -3*s,-47*s, 19*s);
-  headG.addColorStop(0,'#505068');
-  headG.addColorStop(0.6,'#2a2a38');
-  headG.addColorStop(1,'#15151e');
+  headG.addColorStop(0, COLOR_CAT_BASE_START);
+  headG.addColorStop(0.6, COLOR_CAT_BASE_MID);
+  headG.addColorStop(1, COLOR_CAT_BASE_END);
   ctx.fillStyle = headG;
   ctx.beginPath();
   ctx.arc(0, -46*s, 18*s, 0, Math.PI*2);
   ctx.fill();
+
+  /* ── STRISCE TESTA ── */
+  ctx.save();
+  ctx.strokeStyle = COLOR_CAT_STRIPE;
+  ctx.lineWidth = 1.6 * s;
+  ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(0*s, -58*s); ctx.lineTo(0*s, -52*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-6*s, -56*s); ctx.lineTo(-2*s, -51*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo( 6*s, -56*s); ctx.lineTo( 2*s, -51*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-13*s, -46*s); ctx.lineTo(-17*s, -42*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo( 13*s, -46*s); ctx.lineTo( 17*s, -42*s); ctx.stroke();
+  ctx.restore();
 
   /* ears */
   function ear(ex, ey, rot) {
@@ -689,7 +669,7 @@ function drawPipi(x, y, facingRight, state, tailA, blinking, bounceAnim) {
     ctx.lineTo(-8*s,-18*s);
     ctx.lineTo(8*s,-18*s);
     ctx.closePath();
-    ctx.fillStyle = '#1e1e28';
+    ctx.fillStyle = COLOR_CAT_ACCENT;
     ctx.fill();
     ctx.beginPath();
     ctx.moveTo(0,-3*s);
@@ -703,11 +683,10 @@ function drawPipi(x, y, facingRight, state, tailA, blinking, bounceAnim) {
   ear(-12*s, -58*s, -0.15);
   ear( 12*s, -58*s,  0.15);
 
-  /* eyes — big cute green */
+  /* eyes */
   const eyeY = -48*s;
   [-7.5, 7.5].forEach(ex => {
     ex *= s;
-    // eye glow
     const eyeGlow = ctx.createRadialGradient(ex, eyeY, 0, ex, eyeY, 7*s);
     eyeGlow.addColorStop(0,'rgba(100,220,120,0.3)');
     eyeGlow.addColorStop(1,'rgba(100,220,120,0)');
@@ -716,7 +695,6 @@ function drawPipi(x, y, facingRight, state, tailA, blinking, bounceAnim) {
     ctx.arc(ex, eyeY, 8*s, 0, Math.PI*2);
     ctx.fill();
 
-    // white
     ctx.beginPath();
     ctx.arc(ex, eyeY, 5.5*s, 0, Math.PI*2);
     ctx.fillStyle = '#e8f8e0';
@@ -730,22 +708,18 @@ function drawPipi(x, y, facingRight, state, tailA, blinking, bounceAnim) {
       ctx.lineWidth = 2*s;
       ctx.stroke();
     } else {
-      // iris
       ctx.beginPath();
       ctx.arc(ex, eyeY, 4*s, 0, Math.PI*2);
       ctx.fillStyle = '#50c858';
       ctx.fill();
-      // pupil slit
       ctx.beginPath();
       ctx.ellipse(ex, eyeY, 1.5*s, 3.5*s, 0, 0, Math.PI*2);
       ctx.fillStyle = '#0a0a14';
       ctx.fill();
-      // shine 1
       ctx.beginPath();
       ctx.arc(ex - 1.5*s, eyeY - 1.5*s, 1.4*s, 0, Math.PI*2);
       ctx.fillStyle = 'rgba(255,255,255,0.95)';
       ctx.fill();
-      // shine 2 (small)
       ctx.beginPath();
       ctx.arc(ex + 1.8*s, eyeY + 0.8*s, 0.7*s, 0, Math.PI*2);
       ctx.fillStyle = 'rgba(255,255,255,0.6)';
@@ -753,7 +727,7 @@ function drawPipi(x, y, facingRight, state, tailA, blinking, bounceAnim) {
     }
   });
 
-  /* nose — tiny pink */
+  /* nose */
   ctx.beginPath();
   ctx.moveTo(0, -42*s);
   ctx.lineTo(-3*s,-39*s);
@@ -774,7 +748,7 @@ function drawPipi(x, y, facingRight, state, tailA, blinking, bounceAnim) {
   ctx.stroke();
 
   /* whiskers */
-  ctx.strokeStyle = 'rgba(200,200,220,0.65)';
+  ctx.strokeStyle = 'rgba(180,180,180,0.65)';
   ctx.lineWidth = 0.9*s;
   [[-1,-1],[-1,0],[-1,1],[1,-1],[1,0],[1,1]].forEach(([side,row]) => {
     const wy = (-39 + row*3)*s;
@@ -784,7 +758,7 @@ function drawPipi(x, y, facingRight, state, tailA, blinking, bounceAnim) {
     ctx.stroke();
   });
 
-  ctx.restore(); // head/body bob
+  ctx.restore(); 
 
   /* ── LEGS ── */
   ctx.save();
@@ -792,19 +766,17 @@ function drawPipi(x, y, facingRight, state, tailA, blinking, bounceAnim) {
   const legBob = state === 'run' ? Math.sin(cat.animTimer * 0.25) * 6 : 0;
   [[-10, 1], [10, -1]].forEach(([lx, sign]) => {
     const lb = legBob * sign;
-    ctx.strokeStyle = '#1e1e28';
+    ctx.strokeStyle = COLOR_CAT_ACCENT;
     ctx.lineWidth = 8*s;
     ctx.lineCap = 'round';
     ctx.beginPath();
     ctx.moveTo(lx*s, -4*s);
     ctx.lineTo(lx*s, 6*s + lb*s);
     ctx.stroke();
-    // cute round paw
     ctx.beginPath();
     ctx.arc(lx*s, 8*s + lb*s, 5.5*s, 0, Math.PI*2);
-    ctx.fillStyle = '#2a2a3a';
+    ctx.fillStyle = COLOR_CAT_PAW;
     ctx.fill();
-    // toe beans
     ctx.fillStyle = '#e878b8';
     ctx.beginPath(); ctx.arc(lx*s - 3*s, 9*s + lb*s, 1.8*s, 0, Math.PI*2); ctx.fill();
     ctx.beginPath(); ctx.arc(lx*s + 3*s, 9*s + lb*s, 1.8*s, 0, Math.PI*2); ctx.fill();
@@ -957,24 +929,21 @@ function update(ts) {
     if (ball.y - ball.radius < 0) { ball.y = ball.radius;     ball.vy *= BOUNCE; }
   }
 
-    /* cat AI */
+  /* cat AI */
   cat.animTimer += dt;
   cat.bounceAnim += dt * 0.08;
   const dx = ball.x - cat.x;
   const dist = Math.abs(dx);
 
-  // 1. Scaliamo il cooldown ad ogni frame
   if (catchCooldown > 0) {
     catchCooldown -= dt;
   }
 
-  // 2. catch: aggiungiamo il controllo sul cooldown (catchCooldown <= 0)
   if (!ball.isDragging && catchCooldown <= 0 && dist < cat.width * 0.65 &&
       Math.abs(ball.y - (cat.y - 36)) < 52) {
       
-    catchCooldown = 25; // Imposta una pausa prima che possa toccarla di nuovo
+    catchCooldown = 25; 
     
-    // Ho ridotto le particelle da 18 a 10 per alleggerire ulteriormente
     spawnParticles(ball.x, ball.y, 10, 'catch'); 
     showBubble(CATCH_MSGS[Math.floor(Math.random() * CATCH_MSGS.length)]);
     ball.vx = (Math.random() - 0.5) * 14;
@@ -1003,17 +972,15 @@ function update(ts) {
   if (cat.y >= floorY) { cat.y = floorY; cat.vy = 0; cat.isJumping = false; }
   cat.x = Math.max(32, Math.min(W-32, cat.x));
 
-  // tail animation
   cat.tailAngle = Math.sin(ts*0.0016)*1.2 + Math.sin(ts*0.0028)*0.4;
 
-  // blink
   cat.blinkTimer -= dt;
   if (cat.blinkTimer <= 0) {
     cat.isBlinking = !cat.isBlinking;
     cat.blinkTimer = cat.isBlinking ? 4 : (Math.random()*200+80);
   }
 
-  drawPipi(cat.x, cat.y, cat.facingRight, cat.state,
+  drawObi(cat.x, cat.y, cat.facingRight, cat.state,
            cat.tailAngle, cat.isBlinking, cat.bounceAnim);
   drawBall();
   updateParticles();
