@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fede puzzona</title>
+    <title>Madda puzzona</title>
     <style>
         body {
             margin: 0;
@@ -59,7 +59,7 @@
         window.addEventListener('contextmenu', (e) => e.preventDefault());
 
         // Array per i sistemi particellari
-        let cuoriActivi = []; // Cuori di Fede puzzona
+        let cuoriActivi = []; // Cuori di Madda puzzona
         let cuoriCucciolo = []; // AGGIUNTA: Cuori colorati del cucciolo
         let scintilleCoda = [];
         let nuvole = [];
@@ -166,7 +166,7 @@
         }
 
         window.addEventListener('mousedown', (e) => {
-            if (e.button === 0) { // Clic Sinistro: Cuori Fede puzzona
+            if (e.button === 0) { // Clic Sinistro: Cuori Madda puzzona
                 mouthOpen = 1.0; 
                 let dxT = drago[0].x - drago[2].x;
                 let dyT = drago[0].y - drago[2].y;
@@ -479,7 +479,7 @@
             }
             ctx.restore();
 
-            // --- G. CUORI "FEDE PUZZONA" ---
+            // --- G. CUORI "Madda PUZZONA" ---
             ctx.save();
             ctx.shadowColor = 'rgba(255, 46, 46, 0.9)'; 
             ctx.shadowBlur = 20;
@@ -508,7 +508,7 @@
                 ctx.font = `bold ${cuore.dimensione/4.5}px Arial, sans-serif`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillText('Fede puzzona', cuore.x, cuore.y + cuore.dimensione/5);
+                ctx.fillText('Madda puzzona', cuore.x, cuore.y + cuore.dimensione/5);
             }
             ctx.restore();
 
