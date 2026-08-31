@@ -38,10 +38,32 @@
         let blinkTimer = 0;
         let mouthOpen = 0; 
 
+        // Stati del mouse per il lanciafiamme continuo
+        let isLeftMouseDown = false;
+        let isRightMouseDown = false;
+
         window.addEventListener('mousemove', (e) => {
             mouse.x = e.clientX;
             mouse.y = e.clientY;
         });
+
+        window.addEventListener('mousedown', (e) => {
+            if (e.button === 0) isLeftMouseDown = true;
+            else if (e.button === 2) isRightMouseDown = true;
+        });
+
+        window.addEventListener('mouseup', (e) => {
+            if (e.button === 0) isLeftMouseDown = false;
+            else if (e.button === 2) isRightMouseDown = false;
+        });
+
+        window.addEventListener('mouseleave', () => {
+            isLeftMouseDown = false;
+            isRightMouseDown = false;
+        });
+
+        // Disabilita il menu contestuale sul tasto destro
+        window.addEventListener('contextmenu', (e) => e.preventDefault());
 
         const numPunti = 60;
         const distanzaPunti = 8;
@@ -53,21 +75,16 @@
         const coloreCorpo = "#d93838"; 
         const coloreSpine = "#ffcc00"; 
         const coloreAli = "#8c1c1c"; 
-        const coloreCuore = "#ff2e2e";
 
-        // AGGIUNTA: Disabilita il menu contestuale sul tasto destro
-        window.addEventListener('contextmenu', (e) => e.preventDefault());
-
-        // Array per i sistemi particellari
-        let cuoriActivi = []; // Cuori di Madda puzzona
-        let cuoriCucciolo = []; // AGGIUNTA: Cuori colorati del cucciolo
+        // Array per i sistemi particellari di Fuoco
+        let fiamme = []; 
+        let fiammeCucciolo = []; 
         let scintilleCoda = [];
         let nuvole = [];
 
-        // AGGIUNTA: Configurazione Cucciolo di Draghetto
-        const coloreCucciolo = "#78e08f"; // Un verde cute
+        // Configurazione Cucciolo di Draghetto
+        const coloreCucciolo = "#78e08f"; // Verde cute
         const cucciolo = { x: width / 2, y: height / 2, angolo: 0 };
-        const coloriCuoriCucciolo = ['#ff9ff3', '#ffeaa7', '#81ecec', '#fab1a0']; // Rosa, Giallo, Azzurro, Arancione pastello
 
         for(let i = 0; i < 25; i++) {
             nuvole.push({
@@ -155,60 +172,11 @@
             ctx.fill();
         }
 
-        function disegnaPercorsoCuore(x, y, dimensione) {
-            ctx.beginPath();
-            ctx.moveTo(x, y + dimensione / 4);
-            ctx.bezierCurveTo(x, y, x - dimensione / 2, y, x - dimensione / 2, y + dimensione / 4);
-            ctx.bezierCurveTo(x - dimensione / 2, y + dimensione / 2, x - dimensione / 4, y + dimensione * 0.75, x, y + dimensione);
-            ctx.bezierCurveTo(x + dimensione / 4, y + dimensione * 0.75, x + dimensione / 2, y + dimensione / 2, x + dimensione / 2, y + dimensione / 4);
-            ctx.bezierCurveTo(x + dimensione / 2, y, x, y, x, y + dimensione / 4);
-            ctx.closePath();
-        }
-
-        window.addEventListener('mousedown', (e) => {
-            if (e.button === 0) { // Clic Sinistro: Cuori Madda puzzona
-                mouthOpen = 1.0; 
-                let dxT = drago[0].x - drago[2].x;
-                let dyT = drago[0].y - drago[2].y;
-                let angoloSparo = Math.atan2(dyT, dxT);
-
-                for (let i = 0; i < 4; i++) {
-                    let spread = (Math.random() - 0.5) * 0.8; 
-                    cuoriActivi.push({
-                        x: drago[0].x + Math.cos(angoloSparo)*20,
-                        y: drago[0].y + Math.sin(angoloSparo)*20,
-                        vx: Math.cos(angoloSparo + spread) * (15 + Math.random()*5),
-                        vy: Math.sin(angoloSparo + spread) * (15 + Math.random()*5),
-                        dimensione: 60 + Math.random() * 50,
-                        alpha: 1,
-                        lifespan: 120 + Math.random() * 40
-                    });
-                }
-            } else if (e.button === 2) { // AGGIUNTA: Clic Destro: Cuori Colorati del Cucciolo
-                let aC = cucciolo.angolo + Math.PI/2; // Orientamento sparo dal cucciolo
-
-                for(let i = 0; i < 6; i++) {
-                    let spread = (Math.random() - 0.5) * 0.6;
-                    cuoriCucciolo.push({
-                        x: cucciolo.x, y: cucciolo.y,
-                        vx: Math.cos(aC + spread) * (8 + Math.random()*4),
-                        vy: Math.sin(aC + spread) * (8 + Math.random()*4) - 2, // Spinge verso l'alto
-                        dimensione: 30 + Math.random() * 20, // Più piccoli e cute
-                        alpha: 1,
-                        lifespan: 100 + Math.random() * 30,
-                        color: coloriCuoriCucciolo[Math.floor(Math.random() * coloriCuoriCucciolo.length)] // Colore casuale
-                    });
-                }
-            }
-        });
-
-        // AGGIUNTA: Funzione per disegnare il cucciolo
         function disegnaCucciolo() {
-            // Aggiornamento posizione soft follow drago[15]
+            // Aggiornamento posizione soft follow
             cucciolo.x += (drago[15].x - 30 - cucciolo.x) * 0.04;
             cucciolo.y += (drago[15].y + 20 - cucciolo.y) * 0.04;
 
-            // Orientamento soft lag
             let dx = drago[15].x - drago[17].x;
             let dy = drago[15].y - drago[17].y;
             cucciolo.angolo = Math.atan2(dy, dx);
@@ -217,43 +185,42 @@
             ctx.translate(cucciolo.x, cucciolo.y);
             ctx.rotate(cucciolo.angolo);
 
-            // Caratteristiche cute: corpo più tondo, testa più grande proprozionata
-            const rC = 12; // Raggio cute head
+            const rC = 12; 
 
-            // Body
+            // Corpo
             ctx.fillStyle = coloreCucciolo;
             ctx.beginPath();
             ctx.ellipse(-15, 0, 18, rC * 0.8, 0, 0, Math.PI * 2);
             ctx.fill();
 
-            // Tiny Cute Wings (scaled disegnaAla conceptually, but inline)
+            // Ali cucciolo
             ctx.save();
-            ctx.translate(-15, 0); // Position on body
-            ctx.rotate(Math.sin(time * 8) * 0.2); // Faster cute flap
-            ctx.scale(0.4, 0.4); // Scale down
-            disegnaAla(0); // Simplified draw
+            ctx.translate(-15, 0);
+            ctx.rotate(Math.sin(time * 8) * 0.2); 
+            ctx.scale(0.4, 0.4);
+            disegnaAla(0); 
             ctx.scale(1, -1);
             disegnaAla(0);
             ctx.restore();
 
-            // Head
+            // Testa
             ctx.fillStyle = coloreCucciolo;
             ctx.beginPath();
             ctx.arc(0, 0, rC, 0, Math.PI * 2);
             ctx.fill();
 
-            // Occhi cute (più grandi)
+            // Occhi cute
             ctx.fillStyle = "#ffffff";
             ctx.beginPath(); ctx.arc(4, -4, 4, 0, Math.PI * 2); ctx.fill();
             ctx.beginPath(); ctx.arc(4, 4, 4, 0, Math.PI * 2); ctx.fill();
             ctx.fillStyle = "#000000";
             ctx.beginPath(); ctx.arc(5, -4, 2, 0, Math.PI * 2); ctx.fill();
             ctx.beginPath(); ctx.arc(5, 4, 2, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "#ffffff"; // Cute glints
+            ctx.fillStyle = "#ffffff"; 
             ctx.beginPath(); ctx.arc(6, -5, 1, 0, Math.PI * 2); ctx.fill();
             ctx.beginPath(); ctx.arc(6, 3, 1, 0, Math.PI * 2); ctx.fill();
 
-            // Tiny horns
+            // Corna cucciolo
             ctx.strokeStyle = "#ffeaa7";
             ctx.lineWidth = 3;
             ctx.beginPath(); ctx.moveTo(-3, -8); ctx.quadraticCurveTo(-10, -15, -5, -20); ctx.stroke();
@@ -279,6 +246,47 @@
 
             if(Math.random() < 0.008) blinkTimer = 10;
             if(blinkTimer > 0) blinkTimer--;
+
+            // SPAM FUOCO (Se i tasti sono premuti)
+            if (isLeftMouseDown) {
+                mouthOpen = 1.0; 
+                let dxT = drago[0].x - drago[2].x;
+                let dyT = drago[0].y - drago[2].y;
+                let angoloSparo = Math.atan2(dyT, dxT);
+
+                // Genera particelle fiamma
+                for (let i = 0; i < 6; i++) {
+                    let spread = (Math.random() - 0.5) * 0.5; 
+                    let speed = 12 + Math.random() * 8;
+                    fiamme.push({
+                        x: drago[0].x + Math.cos(angoloSparo)*20,
+                        y: drago[0].y + Math.sin(angoloSparo)*20,
+                        vx: Math.cos(angoloSparo + spread) * speed,
+                        vy: Math.sin(angoloSparo + spread) * speed,
+                        life: 1.0,
+                        decay: 0.015 + Math.random() * 0.02,
+                        size: 25 + Math.random() * 20
+                    });
+                }
+            }
+
+            if (isRightMouseDown) {
+                let aC = cucciolo.angolo + Math.PI/2;
+                // Genera particelle fiamma del cucciolo
+                for(let i = 0; i < 4; i++) {
+                    let spread = (Math.random() - 0.5) * 0.5;
+                    let speed = 8 + Math.random() * 5;
+                    fiammeCucciolo.push({
+                        x: cucciolo.x + Math.cos(aC)*10,
+                        y: cucciolo.y + Math.sin(aC)*10,
+                        vx: Math.cos(aC + spread) * speed,
+                        vy: Math.sin(aC + spread) * speed,
+                        life: 1.0,
+                        decay: 0.02 + Math.random() * 0.03,
+                        size: 15 + Math.random() * 10
+                    });
+                }
+            }
 
             // --- SFONDO IN PARALLASSE (Nuvole) ---
             nuvole.forEach(n => {
@@ -368,7 +376,7 @@
             disegnaAla(flap);
             ctx.restore();
 
-            // --- DISEGNO CUCCIOLO (AGGIUNTA) ---
+            // --- DISEGNO CUCCIOLO ---
             disegnaCucciolo();
 
             // --- DISEGNO CORPO DRAGO ---
@@ -448,67 +456,65 @@
             ctx.beginPath(); ctx.moveTo(-2, 12); ctx.quadraticCurveTo(-25, 35, -5, 50); ctx.stroke();
             ctx.restore();
 
+            // Bagliore bocca quando aperta
             if (mouthOpen > 0.1) {
                 let glow = ctx.createRadialGradient(drago[0].x, drago[0].y, 0, drago[0].x, drago[0].y, 150);
-                glow.addColorStop(0, `rgba(255, 50, 50, ${mouthOpen * 0.4})`);
+                glow.addColorStop(0, `rgba(255, 150, 50, ${mouthOpen * 0.5})`);
                 glow.addColorStop(1, 'rgba(255, 50, 50, 0)');
-                ctx.globalCompositeOperation = "screen";
+                ctx.globalCompositeOperation = "lighter";
                 ctx.fillStyle = glow;
                 ctx.beginPath(); ctx.arc(drago[0].x, drago[0].y, 150, 0, Math.PI*2); ctx.fill();
                 ctx.globalCompositeOperation = "source-over";
             }
 
-            // --- CUORI COLORATI CUCCIOLO (AGGIUNTA) ---
+            // --- DISEGNO FUOCO (Lighter per effetto luminoso) ---
             ctx.save();
-            ctx.shadowBlur = 10;
-            for(let i = cuoriCucciolo.length - 1; i >= 0; i--) {
-                let c = cuoriCucciolo[i];
-                c.x += c.vx; c.y += c.vy;
-                c.dimensione *= 1.01; 
-                c.alpha *= 0.98;
-                c.vx *= 0.99; c.vy *= 0.99;
-                c.lifespan--;
+            ctx.globalCompositeOperation = "lighter";
 
-                if (c.alpha <= 0 || c.lifespan <= 0) { cuoriCucciolo.splice(i, 1); continue; }
+            // Fuoco Cucciolo (Magico Verde)
+            for(let i = fiammeCucciolo.length - 1; i >= 0; i--) {
+                let f = fiammeCucciolo[i];
+                f.x += f.vx; f.y += f.vy;
+                f.vy -= 0.15; // Il fuoco sale
+                f.life -= f.decay;
+                f.size *= 0.95;
 
-                ctx.globalAlpha = c.alpha;
-                ctx.fillStyle = c.color;
-                ctx.shadowColor = c.color; // Bagliore colorato
-                disegnaPercorsoCuore(c.x, c.y - c.dimensione/2, c.dimensione);
+                if (f.life <= 0 || f.size <= 0.5) { 
+                    fiammeCucciolo.splice(i, 1); 
+                    continue; 
+                }
+
+                // Colore dal verde all'azzurro
+                let hue = Math.floor(120 + f.life * 50);
+                let lightness = Math.floor(f.life * 50 + 10);
+                ctx.fillStyle = `hsla(${hue}, 100%, ${lightness}%, ${f.life})`;
+                
+                ctx.beginPath();
+                ctx.arc(f.x, f.y, f.size, 0, Math.PI * 2);
                 ctx.fill();
             }
-            ctx.restore();
 
-            // --- G. CUORI "Madda PUZZONA" ---
-            ctx.save();
-            ctx.shadowColor = 'rgba(255, 46, 46, 0.9)'; 
-            ctx.shadowBlur = 20;
-            for (let i = cuoriActivi.length - 1; i >= 0; i--) {
-                let cuore = cuoriActivi[i];
-                cuore.x += cuore.vx;
-                cuore.y += cuore.vy;
-                cuore.dimensione *= 1.015; 
-                cuore.alpha *= 0.98; 
-                cuore.vx *= 0.97; 
-                cuore.vy *= 0.97; 
-                cuore.lifespan--;
+            // Fuoco Drago Grande (Infernale)
+            for (let i = fiamme.length - 1; i >= 0; i--) {
+                let f = fiamme[i];
+                f.x += f.vx; f.y += f.vy;
+                f.vy -= 0.25; // Effetto di galleggiamento verso l'alto
+                f.life -= f.decay;
+                f.size *= 0.96; 
 
-                if (cuore.alpha <= 0 || cuore.lifespan <= 0) {
-                    cuoriActivi.splice(i, 1);
+                if (f.life <= 0 || f.size <= 0.5) {
+                    fiamme.splice(i, 1);
                     continue;
                 }
 
-                ctx.globalAlpha = Math.min(cuore.alpha, 1);
-                ctx.fillStyle = coloreCuore;
-                disegnaPercorsoCuore(cuore.x, cuore.y - cuore.dimensione/2, cuore.dimensione);
-                ctx.fill();
+                // Colore dal rosso intenso al giallo
+                let hue = Math.floor(f.life * 50); // 0 = rosso, 50 = giallo/oro
+                let lightness = Math.floor(f.life * 50 + 10); // Diventa scuro svanendo
+                ctx.fillStyle = `hsla(${hue}, 100%, ${lightness}%, ${f.life})`;
 
-                ctx.fillStyle = '#ffffff';
-                ctx.shadowBlur = 0; 
-                ctx.font = `bold ${cuore.dimensione/4.5}px Arial, sans-serif`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText('Madda puzzona', cuore.x, cuore.y + cuore.dimensione/5);
+                ctx.beginPath();
+                ctx.arc(f.x, f.y, f.size, 0, Math.PI * 2);
+                ctx.fill();
             }
             ctx.restore();
 
