@@ -53,13 +53,25 @@
         });
 
         window.addEventListener('mouseup', (e) => {
-            if (e.button === 0) isLeftMouseDown = false;
-            else if (e.button === 2) isRightMouseDown = false;
+            if (e.button === 0 && isLeftMouseDown) {
+                isLeftMouseDown = false;
+                sparaTesto(0); // Testo alla fine del getto primario
+            }
+            else if (e.button === 2 && isRightMouseDown) {
+                isRightMouseDown = false;
+                sparaTesto(2); // Testo alla fine del getto secondario
+            }
         });
 
         window.addEventListener('mouseleave', () => {
-            isLeftMouseDown = false;
-            isRightMouseDown = false;
+            if (isLeftMouseDown) {
+                isLeftMouseDown = false;
+                sparaTesto(0);
+            }
+            if (isRightMouseDown) {
+                isRightMouseDown = false;
+                sparaTesto(2);
+            }
         });
 
         // Disabilita il menu contestuale sul tasto destro
@@ -76,11 +88,12 @@
         const coloreSpine = "#ffcc00"; 
         const coloreAli = "#8c1c1c"; 
 
-        // Array per i sistemi particellari di Fuoco
+        // Array per i sistemi particellari
         let fiamme = []; 
         let fiammeCucciolo = []; 
         let scintilleCoda = [];
         let nuvole = [];
+        let testiFinali = []; // Nuova array per la scritta "Madda puzzona"
 
         // Configurazione Cucciolo di Draghetto
         const coloreCucciolo = "#78e08f"; // Verde cute
@@ -100,6 +113,43 @@
             if (i < 6) return 8 + (i * 0.8); 
             if (i >= 6 && i < 18) return 14 + Math.sin((i - 6) / 12 * Math.PI) * 6; 
             return Math.max(2, 16 - ((i - 18) * 0.4)); 
+        }
+
+        // Funzione per generare il testo alla fine del getto
+        function sparaTesto(tipo) {
+            if (tipo === 0) {
+                let dxT = drago[0].x - drago[2].x;
+                let dyT = drago[0].y - drago[2].y;
+                let angoloSparo = Math.atan2(dyT, dxT);
+                
+                // Distanza per far apparire il testo "in fondo" alla fiamma
+                let distanza = 180;
+                testiFinali.push({
+                    x: drago[0].x + Math.cos(angoloSparo)*distanza,
+                    y: drago[0].y + Math.sin(angoloSparo)*distanza,
+                    vx: Math.cos(angoloSparo) * 4,
+                    vy: Math.sin(angoloSparo) * 4,
+                    life: 1.4, // Dura un po' di più prima di sfumare
+                    decay: 0.012,
+                    testo: "Madda puzzona",
+                    colore: "#ff9999", // Rosso/rosa fuoco
+                    size: 40
+                });
+            } else if (tipo === 2) {
+                let aC = cucciolo.angolo + Math.PI/2;
+                let distanza = 120;
+                testiFinali.push({
+                    x: cucciolo.x + Math.cos(aC)*distanza,
+                    y: cucciolo.y + Math.sin(aC)*distanza,
+                    vx: Math.cos(aC) * 3,
+                    vy: Math.sin(aC) * 3,
+                    life: 1.4,
+                    decay: 0.015,
+                    testo: "Madda puzzona",
+                    colore: "#a8ffb8", // Verde magico
+                    size: 25
+                });
+            }
         }
 
         function disegnaAla(flap) {
@@ -173,7 +223,6 @@
         }
 
         function disegnaCucciolo() {
-            // Aggiornamento posizione soft follow
             cucciolo.x += (drago[15].x - 30 - cucciolo.x) * 0.04;
             cucciolo.y += (drago[15].y + 20 - cucciolo.y) * 0.04;
 
@@ -247,14 +296,13 @@
             if(Math.random() < 0.008) blinkTimer = 10;
             if(blinkTimer > 0) blinkTimer--;
 
-            // SPAM FUOCO (Se i tasti sono premuti)
+            // --- SPAM FUOCO CONTINUO ---
             if (isLeftMouseDown) {
                 mouthOpen = 1.0; 
                 let dxT = drago[0].x - drago[2].x;
                 let dyT = drago[0].y - drago[2].y;
                 let angoloSparo = Math.atan2(dyT, dxT);
 
-                // Genera particelle fiamma
                 for (let i = 0; i < 6; i++) {
                     let spread = (Math.random() - 0.5) * 0.5; 
                     let speed = 12 + Math.random() * 8;
@@ -272,7 +320,6 @@
 
             if (isRightMouseDown) {
                 let aC = cucciolo.angolo + Math.PI/2;
-                // Genera particelle fiamma del cucciolo
                 for(let i = 0; i < 4; i++) {
                     let spread = (Math.random() - 0.5) * 0.5;
                     let speed = 8 + Math.random() * 5;
@@ -288,7 +335,7 @@
                 }
             }
 
-            // --- SFONDO IN PARALLASSE (Nuvole) ---
+            // --- SFONDO Nuvole ---
             nuvole.forEach(n => {
                 n.y += n.speed * (1 + speedMult * 0.5); 
                 if(n.y - n.r > height) {
@@ -429,7 +476,7 @@
             ctx.fill();
             
             ctx.fillStyle = "#660000";
-            ctx.beginPath(); ctx.arc(24, -6, 2.5, 0, Math.PI * 2); ctx.fill(); // Narici
+            ctx.beginPath(); ctx.arc(24, -6, 2.5, 0, Math.PI * 2); ctx.fill(); 
             ctx.beginPath(); ctx.arc(24, 2, 2.5, 0, Math.PI * 2); ctx.fill();
 
             if(blinkTimer > 0) {
@@ -456,7 +503,6 @@
             ctx.beginPath(); ctx.moveTo(-2, 12); ctx.quadraticCurveTo(-25, 35, -5, 50); ctx.stroke();
             ctx.restore();
 
-            // Bagliore bocca quando aperta
             if (mouthOpen > 0.1) {
                 let glow = ctx.createRadialGradient(drago[0].x, drago[0].y, 0, drago[0].x, drago[0].y, 150);
                 glow.addColorStop(0, `rgba(255, 150, 50, ${mouthOpen * 0.5})`);
@@ -467,15 +513,15 @@
                 ctx.globalCompositeOperation = "source-over";
             }
 
-            // --- DISEGNO FUOCO (Lighter per effetto luminoso) ---
+            // --- DISEGNO FUOCO E TESTO FINALE ---
             ctx.save();
             ctx.globalCompositeOperation = "lighter";
 
-            // Fuoco Cucciolo (Magico Verde)
+            // Fuoco Cucciolo
             for(let i = fiammeCucciolo.length - 1; i >= 0; i--) {
                 let f = fiammeCucciolo[i];
                 f.x += f.vx; f.y += f.vy;
-                f.vy -= 0.15; // Il fuoco sale
+                f.vy -= 0.15; 
                 f.life -= f.decay;
                 f.size *= 0.95;
 
@@ -484,21 +530,17 @@
                     continue; 
                 }
 
-                // Colore dal verde all'azzurro
                 let hue = Math.floor(120 + f.life * 50);
                 let lightness = Math.floor(f.life * 50 + 10);
                 ctx.fillStyle = `hsla(${hue}, 100%, ${lightness}%, ${f.life})`;
-                
-                ctx.beginPath();
-                ctx.arc(f.x, f.y, f.size, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(f.x, f.y, f.size, 0, Math.PI * 2); ctx.fill();
             }
 
-            // Fuoco Drago Grande (Infernale)
+            // Fuoco Drago Grande
             for (let i = fiamme.length - 1; i >= 0; i--) {
                 let f = fiamme[i];
                 f.x += f.vx; f.y += f.vy;
-                f.vy -= 0.25; // Effetto di galleggiamento verso l'alto
+                f.vy -= 0.25; 
                 f.life -= f.decay;
                 f.size *= 0.96; 
 
@@ -507,14 +549,44 @@
                     continue;
                 }
 
-                // Colore dal rosso intenso al giallo
-                let hue = Math.floor(f.life * 50); // 0 = rosso, 50 = giallo/oro
-                let lightness = Math.floor(f.life * 50 + 10); // Diventa scuro svanendo
+                let hue = Math.floor(f.life * 50); 
+                let lightness = Math.floor(f.life * 50 + 10); 
                 ctx.fillStyle = `hsla(${hue}, 100%, ${lightness}%, ${f.life})`;
+                ctx.beginPath(); ctx.arc(f.x, f.y, f.size, 0, Math.PI * 2); ctx.fill();
+            }
+            ctx.restore();
 
-                ctx.beginPath();
-                ctx.arc(f.x, f.y, f.size, 0, Math.PI * 2);
-                ctx.fill();
+            // --- DISEGNO TESTO "MADDA PUZZONA" (Effetto Nuvola) ---
+            ctx.save();
+            for (let i = testiFinali.length - 1; i >= 0; i--) {
+                let t = testiFinali[i];
+                t.x += t.vx;
+                t.y += t.vy;
+                t.vy -= 0.08; // Si alza come fumo leggero
+                t.size += 0.2; // Si espande dolcemente
+                t.life -= t.decay;
+
+                if (t.life <= 0) {
+                    testiFinali.splice(i, 1);
+                    continue;
+                }
+
+                ctx.globalAlpha = Math.min(t.life, 1.0);
+                ctx.fillStyle = t.colore;
+                ctx.font = `bold ${t.size}px Arial, sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                // Ombra per l'effetto bagliore
+                ctx.shadowColor = t.colore;
+                ctx.shadowBlur = 15;
+                ctx.fillText(t.testo, t.x, t.y);
+                
+                // Bordino bianco per far risaltare il testo
+                ctx.lineWidth = 1.5;
+                ctx.strokeStyle = `rgba(255, 255, 255, ${Math.min(t.life, 0.8)})`;
+                ctx.shadowBlur = 0;
+                ctx.strokeText(t.testo, t.x, t.y);
             }
             ctx.restore();
 
